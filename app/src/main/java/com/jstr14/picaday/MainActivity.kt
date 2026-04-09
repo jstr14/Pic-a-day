@@ -41,11 +41,9 @@ class MainActivity : ComponentActivity() {
                 val account = task.getResult(ApiException::class.java)
                 val idToken = account?.idToken
                 if (idToken != null) {
-                    // 2. Aquí es donde finalmente llamamos al ViewModel con el Token
                     authViewModel.signInWithGoogle(idToken)
                 }
             } catch (e: ApiException) {
-                // Manejar error de conexión o cancelación
             }
         }
     }

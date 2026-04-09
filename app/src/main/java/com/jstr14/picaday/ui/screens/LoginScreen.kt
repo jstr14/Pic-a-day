@@ -17,7 +17,6 @@ fun LoginScreen(
     authViewModel: AuthViewModel,
     onSignInClick: () -> Unit
 ) {
-    // Observamos el estado de la UI del ViewModel
     val uiState by authViewModel.uiState.collectAsState()
 
     Column(
