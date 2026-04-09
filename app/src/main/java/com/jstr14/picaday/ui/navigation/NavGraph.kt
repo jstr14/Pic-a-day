@@ -1,0 +1,35 @@
+package com.jstr14.picaday.ui.navigation
+
+import androidx.compose.runtime.Composable
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import com.jstr14.picaday.ui.auth.AuthViewModel
+import com.jstr14.picaday.ui.screens.HomeScreen
+import com.jstr14.picaday.ui.screens.LoginScreen
+
+@Composable
+fun NavGraph(
+    navController: NavHostController,
+    startDestination: String,
+    authViewModel: AuthViewModel,
+    onGoogleSignIn: () -> Unit,
+) {
+    NavHost(
+        navController = navController,
+        startDestination = startDestination
+    ) {
+        composable(Screen.Login.route) {
+            LoginScreen(
+                authViewModel = authViewModel,
+                onSignInClick = onGoogleSignIn
+            )
+        }
+
+        composable(Screen.Home.route) {
+            HomeScreen(
+                authViewModel = authViewModel
+            )
+        }
+    }
+}
