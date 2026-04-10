@@ -1,6 +1,7 @@
 package com.jstr14.picaday.data.repository
 
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
 import com.jstr14.picaday.domain.model.User
 import com.jstr14.picaday.domain.repository.AuthRepository
@@ -33,7 +34,7 @@ class AuthRepositoryImpl @Inject constructor(
         _currentUser.value = null
     }
 
-    private fun com.google.firebase.auth.FirebaseUser.toUser() = User(
+    private fun FirebaseUser.toUser() = User(
         id = uid,
         email = email,
         displayName = displayName,
