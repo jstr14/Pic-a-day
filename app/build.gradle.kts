@@ -82,6 +82,10 @@ dependencies {
     implementation(libs.play.services.auth)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.core.splashscreen)
+
+    //Coil
+    implementation(libs.coil.compose)
+
     // Test
     testImplementation(libs.junit.jupiter.api)
     testRuntimeOnly(libs.junit.jupiter.engine)
