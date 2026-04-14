@@ -2,8 +2,10 @@ package com.jstr14.picaday.ui.calendar.components
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -21,34 +23,35 @@ import com.kizitonwose.calendar.core.DayPosition
 @Composable
 fun CalendarDayCell(
     day: CalendarDay,
+    images: List<String>,
     onDayClick: (CalendarDay) -> Unit
 ) {
     Box(
         modifier = Modifier
-            .aspectRatio(1f) // Maintains a square shape for the cell
+            .aspectRatio(0.7f)
             .clickable(
                 enabled = day.position == DayPosition.MonthDate,
                 onClick = { onDayClick(day) }
-            ),
-        contentAlignment = Alignment.Center
+            )
     ) {
-        // Only render content for days that belong to the current month
         if (day.position == DayPosition.MonthDate) {
-
-            // ImageStack integration
-            // TODO: Pass actual image URLs from ViewModel in the next step
-            ImageStack(
-                imageUrls = emptyList(),
-                modifier = Modifier.fillMaxSize().padding(4.dp)
-            )
-
-            // Day number overlay
-            Text(
-                text = day.date.dayOfMonth.toString(),
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(4.dp)
-            )
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = day.date.dayOfMonth.toString(),
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    ImageStack(imageUrls = images)
+                }
+            }
         }
     }
 }
