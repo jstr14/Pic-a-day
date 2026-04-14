@@ -8,5 +8,6 @@ import java.time.LocalDate
 data class DayEntry(
     val date: LocalDate,
     val imageUrls: List<String>,
-    val totalCount: Int = imageUrls.size
+    val totalCount: Int = imageUrls.size,
+    val description: String? = null,
 )
