@@ -1,5 +1,6 @@
 package com.jstr14.picaday.ui.calendar
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -18,9 +19,18 @@ import com.kizitonwose.calendar.core.daysOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.platform.LocalContext
+import androidx.navigation.NavHostController
+import com.jstr14.picaday.ui.navigation.Screen
+import java.util.Map.entry
 
 @Composable
-fun CalendarScreen(viewModel: CalendarViewModel = hiltViewModel()) {
+fun CalendarScreen(
+    navController: NavHostController,
+    viewModel: CalendarViewModel = hiltViewModel()
+) {
+    val context = LocalContext.current
+
     // Range of 10 years from now and before now
     val currentMonth = remember { YearMonth.now() }
     val startMonth = remember { currentMonth.minusMonths(120) }
@@ -54,12 +64,23 @@ fun CalendarScreen(viewModel: CalendarViewModel = hiltViewModel()) {
             state = state,
             dayContent = { day ->
                 // Find the entry for this specific day
-                val entry = entries.find { it.date == day.date }
+                val entryForDay = entries.find { it.date == day.date }
+                val hasData = entryForDay != null && entryForDay.imageUrls.isNotEmpty()
 
                 CalendarDayCell(
                     day = day,
-                    images = entry?.imageUrls ?: emptyList() // Pass the actual URLs!
-                ) { /* Handle click */ }
+                    images = entryForDay?.imageUrls ?: emptyList()
+                ) { clickedDay ->
+                    if (hasData) {
+                        navController.navigate(Screen.DayDetail.createRoute(clickedDay.date.toString()))
+                    } else {
+                        Toast.makeText(
+                            context,
+                            "No hay fotos para este día aún",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
             },
             monthHeader = { DaysOfWeekTitle(daysOfWeek = daysOfWeek) }
         )
