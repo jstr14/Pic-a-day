@@ -1,36 +1,38 @@
 package com.jstr14.picaday.ui.screens
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import com.jstr14.picaday.ui.auth.AuthViewModel
+import com.jstr14.picaday.ui.calendar.CalendarScreen
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     authViewModel: AuthViewModel
 ) {
-    Column(
-        modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(text = "¡Ya estás dentro!", style = MaterialTheme.typography.headlineMedium)
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Button(onClick = {
-            authViewModel.signOut()
-        }) {
-            Text("Cerrar Sesión")
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("PicADay") },
+                actions = {
+                    // Sign out button in the top bar
+                    IconButton(onClick = { authViewModel.signOut() }) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ExitToApp,
+                            contentDescription = "Sign Out"
+                        )
+                    }
+                }
+            )
+        }
+    ) { innerPadding ->
+        // The Calendar occupies the rest of the screen
+        Box(modifier = Modifier.padding(innerPadding)) {
+            CalendarScreen()
         }
     }
 }

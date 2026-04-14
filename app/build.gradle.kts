@@ -42,6 +42,9 @@ android {
         }
     }
     compileOptions {
+
+        isCoreLibraryDesugaringEnabled = true
+
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
@@ -82,9 +85,17 @@ dependencies {
     implementation(libs.play.services.auth)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.core.splashscreen)
+    implementation(libs.androidx.ui)
+    implementation(libs.androidx.foundation)
+    implementation(libs.androidx.material3)
 
     //Coil
     implementation(libs.coil.compose)
+
+    //Calendar
+    implementation(libs.calendar)
+
+    coreLibraryDesugaring(libs.tools.desugar)
 
     // Test
     testImplementation(libs.junit.jupiter.api)
