@@ -12,20 +12,18 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
-import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
-import org.junit.After
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertTrue
-import org.junit.Before
-import org.junit.Test
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class AuthViewModelTest {
@@ -35,7 +33,7 @@ class AuthViewModelTest {
     private lateinit var viewModel: AuthViewModel
     private val userFlow = MutableStateFlow<User?>(null)
 
-    @Before
+    @BeforeEach
     fun setup() {
         Dispatchers.setMain(testDispatcher)
         userFlow.value = null
@@ -44,7 +42,7 @@ class AuthViewModelTest {
         viewModel = AuthViewModel(authRepository)
     }
 
-    @After
+    @AfterEach
     fun tearDown() {
         Dispatchers.resetMain()
     }
@@ -74,18 +72,18 @@ class AuthViewModelTest {
 
             val loadingState = awaitItem()
             assertTrue(
-                "Expected Loading state but found $loadingState",
-                loadingState is AuthState.Loading
+                loadingState is AuthState.Loading,
+                "Expected Loading state but found $loadingState"
             )
 
             val successState = awaitItem()
             assertTrue(
-                "Expected Success state but found $successState",
-                successState is AuthState.Success
+                successState is AuthState.Success,
+                "Expected Success state but found $successState"
             )
 
             val actualUser = (successState as AuthState.Success).user
-            assertEquals("User in Success state does not match", fakeUser, actualUser)
+            assertEquals(fakeUser, actualUser, "User in Success state does not match")
 
             cancelAndIgnoreRemainingEvents()
         }
@@ -116,19 +114,19 @@ class AuthViewModelTest {
 
                 val loadingState = awaitItem()
                 assertTrue(
-                    "Expected Loading state but found $loadingState",
-                    loadingState is AuthState.Loading
+                    loadingState is AuthState.Loading,
+                    "Expected Loading state but found $loadingState"
                 )
 
                 val errorState = awaitItem()
                 assertTrue(
-                    "Expected Error state but found $errorState",
-                    errorState is AuthState.Error
+                    errorState is AuthState.Error,
+                    "Expected Error state but found $errorState"
                 )
                 assertEquals(
-                    "Error message should match the repository exception",
                     expectedFullMessage,
-                    (errorState as AuthState.Error).message
+                    (errorState as AuthState.Error).message,
+                    "Error message should match the repository exception"
                 )
 
                 coVerify(exactly = 1) { authRepository.signInWithGoogle("fake_token") }
@@ -146,7 +144,7 @@ class AuthViewModelTest {
 
         viewModel.uiState.test {
             val firstItem = awaitItem()
-            assertTrue("Expected Success but was $firstItem", firstItem is AuthState.Success)
+            assertTrue(firstItem is AuthState.Success, "Expected Success but was $firstItem")
 
             viewModel.signOut()
             userFlow.value = null
@@ -190,7 +188,7 @@ class AuthViewModelTest {
         viewModel.uiState.test {
             assertEquals(AuthState.Idle, awaitItem())
 
-            viewModel.signInWithGoogle("") // Token vacío
+            viewModel.signInWithGoogle("")
 
             val errorState = awaitItem()
             assertTrue(errorState is AuthState.Error)
