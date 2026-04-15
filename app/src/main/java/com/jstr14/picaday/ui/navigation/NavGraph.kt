@@ -2,9 +2,12 @@ package com.jstr14.picaday.ui.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.navArgument
 import com.jstr14.picaday.ui.auth.AuthViewModel
+import com.jstr14.picaday.ui.daydetail.DayDetailScreen
 import com.jstr14.picaday.ui.screens.HomeScreen
 import com.jstr14.picaday.ui.screens.LoginScreen
 
@@ -28,8 +31,17 @@ fun NavGraph(
 
         composable(Screen.Home.route) {
             HomeScreen(
-                authViewModel = authViewModel
+                authViewModel = authViewModel,
+                navController = navController,
             )
+        }
+
+        composable(
+            route = Screen.DayDetail.route,
+            arguments = listOf(navArgument("dayId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val date = backStackEntry.arguments?.getString("dayId") ?: ""
+            DayDetailScreen(date = date, onBack = { navController.popBackStack() })
         }
     }
 }
