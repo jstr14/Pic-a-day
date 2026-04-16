@@ -97,6 +97,8 @@ dependencies {
 
     coreLibraryDesugaring(libs.tools.desugar)
 
+    implementation(libs.androidx.exifinterface)
+
     // Test
     testImplementation(libs.junit.jupiter.api)
     testRuntimeOnly(libs.junit.jupiter.engine)

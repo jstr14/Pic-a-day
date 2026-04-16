@@ -1,7 +1,7 @@
 package com.jstr14.picaday.di
 
-import com.jstr14.picaday.data.repository.FakeImageRepository
-import com.jstr14.picaday.domain.repository.ImageRepository
+import com.jstr14.picaday.data.repository.FirebaseImageRepositoryImpl
+import com.jstr14.picaday.data.repository.ImageRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -14,7 +14,7 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
-    abstract fun bindImageRepository(
-        fakeImageRepository: FakeImageRepository
+    abstract fun bindFirebaseImageRepository(
+        firebaseImageRepositoryImpl: FirebaseImageRepositoryImpl
     ): ImageRepository
 }

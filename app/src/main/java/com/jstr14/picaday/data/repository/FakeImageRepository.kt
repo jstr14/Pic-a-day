@@ -1,7 +1,6 @@
 package com.jstr14.picaday.data.repository
 
 import com.jstr14.picaday.domain.model.DayEntry
-import com.jstr14.picaday.domain.repository.ImageRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import java.time.LocalDate
@@ -31,5 +30,24 @@ class FakeImageRepository @Inject constructor() : ImageRepository {
             )
         }
         emit(entries)
+    }
+
+    override suspend fun saveDayEntry(dayEntry: DayEntry) {
+        Unit
+    }
+
+    override suspend fun updateImageUrls(
+        date: LocalDate,
+        newUrls: List<String>
+    ) {
+        Unit
+    }
+
+    override suspend fun deleteDayEntry(date: LocalDate) {
+        Unit
+    }
+
+    override suspend fun addPhotoToDate(date: LocalDate, imageUrl: String) {
+        Unit
     }
 }
