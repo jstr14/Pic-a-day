@@ -34,7 +34,7 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -89,8 +89,11 @@ dependencies {
     implementation(libs.androidx.foundation)
     implementation(libs.androidx.material3)
 
+    implementation(libs.material.icons.extended)
+
     //Coil
     implementation(libs.coil.compose)
+    implementation(libs.ui.text.google.fonts)
 
     //Calendar
     implementation(libs.calendar)

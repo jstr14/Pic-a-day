@@ -69,7 +69,7 @@ fun CalendarScreen(
                     pickMultipleMedia.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
                 },
                 containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = Color.White
+                contentColor = MaterialTheme.colorScheme.onPrimary
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Subir foto")
             }
@@ -80,7 +80,7 @@ fun CalendarScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            // 1. Contenido principal (Calendario)
+            // Calendar - Main content
             Column(modifier = Modifier.fillMaxSize()) {
                 CalendarHeader(visibleMonth = visibleMonth)
 
@@ -99,7 +99,7 @@ fun CalendarScreen(
                 )
             }
 
-            // 2. Indicador de carga flotante con animación
+            // Loading indicator
             AnimatedVisibility(
                 visible = isUploading,
                 enter = fadeIn() + slideInVertically(initialOffsetY = { it }),
