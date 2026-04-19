@@ -11,9 +11,9 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.AddPhotoAlternate
+import androidx.compose.material.icons.filled.DeleteForever
+import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -108,20 +108,20 @@ fun DayDetailScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Add,
+                        imageVector = Icons.Default.AddPhotoAlternate,
                         contentDescription = null,
-                        tint = Color.Gray,
+                        tint = MaterialTheme.colorScheme.outline,
                         modifier = Modifier.size(64.dp)
                     )
                     Spacer(Modifier.height(16.dp))
                     Text(
                         text = "No hay recuerdos el ${date.toPrettyDate()}",
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.onBackground,
                         style = MaterialTheme.typography.titleMedium
                     )
                     Text(
                         text = "Pulsa el botón + para añadir tu primera foto.",
-                        color = Color.Gray,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         style = MaterialTheme.typography.bodyMedium
                     )
                 }
@@ -145,14 +145,32 @@ fun DayDetailScreen(
                             )
                         }
 
+                        // Top gradient scrim for icon visibility
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(120.dp)
+                                .align(Alignment.TopCenter)
+                                .background(
+                                    brush = Brush.verticalGradient(
+                                        colors = listOf(Color.Black.copy(alpha = 0.6f), Color.Transparent)
+                                    )
+                                )
+                        )
+
                         // Page indicator
                         Text(
                             text = "${pagerState.currentPage + 1} / ${entry.imageUrls.size}",
-                            color = Color.White.copy(alpha = 0.7f),
+                            color = Color.White,
                             modifier = Modifier
                                 .statusBarsPadding()
                                 .padding(top = 60.dp, end = 16.dp)
-                                .align(Alignment.TopEnd),
+                                .align(Alignment.TopEnd)
+                                .background(
+                                    color = Color.Black.copy(alpha = 0.4f),
+                                    shape = RoundedCornerShape(12.dp)
+                                )
+                                .padding(horizontal = 8.dp, vertical = 4.dp),
                             style = MaterialTheme.typography.labelLarge
                         )
 
@@ -167,7 +185,7 @@ fun DayDetailScreen(
                                 .padding(top = 8.dp, end = 56.dp)
                                 .align(Alignment.TopEnd)
                         ) {
-                            Icon(Icons.Default.Delete, "Borrar foto", tint = Color.White.copy(alpha = 0.7f))
+                            Icon(Icons.Default.DeleteOutline, "Borrar foto", tint = Color.White.copy(alpha = 0.7f))
                         }
                     }
 
@@ -179,7 +197,7 @@ fun DayDetailScreen(
                             .padding(8.dp)
                             .align(Alignment.TopEnd)
                     ) {
-                        Icon(Icons.Default.Close, "Borrar todo", tint = Color.Red)
+                        Icon(Icons.Default.DeleteForever, "Borrar todo", tint = MaterialTheme.colorScheme.error)
                     }
 
                     // Bottom panel with text
@@ -218,12 +236,12 @@ fun DayDetailScreen(
             exit = fadeOut() + slideOutVertically(targetOffsetY = { it }),
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 120.dp) // Posicionado sobre el panel de texto
+                .padding(bottom = 120.dp)
                 .padding(horizontal = 24.dp)
         ) {
             Surface(
                 shape = RoundedCornerShape(24.dp),
-                color = Color.DarkGray.copy(alpha = 0.9f),
+                color = MaterialTheme.colorScheme.inverseSurface,
                 tonalElevation = 8.dp
             ) {
                 Row(
@@ -233,13 +251,13 @@ fun DayDetailScreen(
                     CircularProgressIndicator(
                         modifier = Modifier.size(16.dp),
                         strokeWidth = 2.dp,
-                        color = Color.White
+                        color = MaterialTheme.colorScheme.inverseOnSurface
                     )
                     Spacer(Modifier.width(12.dp))
                     Text(
                         text = "Añadiendo recuerdos...",
                         style = MaterialTheme.typography.labelMedium,
-                        color = Color.White
+                        color = MaterialTheme.colorScheme.inverseOnSurface
                     )
                 }
             }
@@ -268,7 +286,7 @@ fun DayDetailScreen(
             containerColor = MaterialTheme.colorScheme.primaryContainer,
             contentColor = MaterialTheme.colorScheme.onPrimaryContainer
         ) {
-            Icon(Icons.Default.Add, "Añadir")
+            Icon(Icons.Default.AddPhotoAlternate, "Añadir")
         }
     }
 }
