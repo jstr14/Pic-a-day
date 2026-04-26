@@ -6,7 +6,10 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -16,6 +19,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import com.jstr14.picaday.ui.theme.logo.PicADayLogo
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.navigation.compose.rememberNavController
 import com.google.android.gms.auth.api.signin.GoogleSignIn
@@ -23,6 +28,9 @@ import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
 import com.jstr14.picaday.ui.auth.AuthViewModel
 import com.jstr14.picaday.ui.navigation.NavGraph
+import com.jstr14.picaday.ui.theme.util.AppIconManager
+import com.jstr14.picaday.ui.theme.util.Season
+import com.jstr14.picaday.ui.theme.util.SeasonManager
 import com.jstr14.picaday.ui.navigation.Screen
 import com.jstr14.picaday.ui.theme.PicADayTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -49,13 +57,12 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        setTheme(seasonalSplashTheme())
         val splashScreen = installSplashScreen()
 
         super.onCreate(savedInstanceState)
 
-        splashScreen.setKeepOnScreenCondition {
-            authViewModel.isInitializing.value
-        }
+        AppIconManager.update(this)
 
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
             .requestIdToken(getString(R.string.default_web_client_id)) // ID de Firebase
@@ -112,12 +119,31 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+private fun MainActivity.seasonalSplashTheme(): Int = when (SeasonManager.getSpecialDay()) {
+    SeasonManager.SpecialDay.HALLOWEEN -> R.style.Theme_App_Starting_Halloween
+    SeasonManager.SpecialDay.CHRISTMAS -> R.style.Theme_App_Starting_Christmas
+    SeasonManager.SpecialDay.VALENTINE -> R.style.Theme_App_Starting_Valentine
+    SeasonManager.SpecialDay.NEW_YEAR  -> R.style.Theme_App_Starting_NewYear
+    SeasonManager.SpecialDay.NONE -> when (SeasonManager.getCurrentSeason()) {
+        Season.SPRING -> R.style.Theme_App_Starting_Spring
+        Season.SUMMER -> R.style.Theme_App_Starting_Summer
+        Season.AUTUMN -> R.style.Theme_App_Starting_Autumn
+        Season.WINTER -> R.style.Theme_App_Starting_Winter
+    }
+}
+
 @Composable
 fun LoadingScreen() {
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
-        CircularProgressIndicator()
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            PicADayLogo(logoSize = 140.dp)
+            Spacer(modifier = Modifier.height(32.dp))
+            CircularProgressIndicator()
+        }
     }
 }

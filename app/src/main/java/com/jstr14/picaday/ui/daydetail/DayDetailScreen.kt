@@ -21,10 +21,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
+import com.jstr14.picaday.ui.theme.logo.PicADayLogo
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
@@ -101,29 +104,40 @@ fun DayDetailScreen(
 
             // State 2: Empty data
             !isLoading && dayEntry == null -> {
-                Column(
+                Box(
                     modifier = Modifier
-                        .align(Alignment.Center)
-                        .padding(32.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.background),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.AddPhotoAlternate,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.outline,
-                        modifier = Modifier.size(64.dp)
-                    )
-                    Spacer(Modifier.height(16.dp))
-                    Text(
-                        text = "No hay recuerdos el ${date.toPrettyDate()}",
-                        color = MaterialTheme.colorScheme.onBackground,
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                    Text(
-                        text = "Pulsa el botón + para añadir tu primera foto.",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        style = MaterialTheme.typography.bodyMedium
-                    )
+                    Column(
+                        modifier = Modifier.padding(40.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        PicADayLogo(logoSize = 130.dp)
+                        Spacer(Modifier.height(24.dp))
+                        Text(
+                            text = date.toPrettyDate(),
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            text = "Aún no hay recuerdos para este día",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            text = "Pulsa el botón + para añadir tu primera foto",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.45f),
+                            textAlign = TextAlign.Center
+                        )
+                    }
                 }
             }
 
@@ -263,7 +277,9 @@ fun DayDetailScreen(
             }
         }
 
-        // back button
+        // back button — tint adapts to background (light on photos, themed on empty state)
+        val backTint = if (!isLoading && dayEntry == null)
+            MaterialTheme.colorScheme.onBackground else Color.White
         IconButton(
             onClick = onBack,
             modifier = Modifier
@@ -271,7 +287,7 @@ fun DayDetailScreen(
                 .padding(8.dp)
                 .align(Alignment.TopStart)
         ) {
-            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Atrás", tint = Color.White)
+            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Atrás", tint = backTint)
         }
 
         // FAB

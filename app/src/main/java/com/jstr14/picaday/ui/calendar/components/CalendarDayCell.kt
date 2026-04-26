@@ -1,5 +1,6 @@
 package com.jstr14.picaday.ui.calendar.components
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -7,10 +8,14 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.jstr14.picaday.ui.components.ImageStack
 import com.kizitonwose.calendar.core.CalendarDay
@@ -24,6 +29,7 @@ import com.kizitonwose.calendar.core.DayPosition
 fun CalendarDayCell(
     day: CalendarDay,
     images: List<String>,
+    isToday: Boolean = false,
     onDayClick: (CalendarDay) -> Unit
 ) {
     Box(
@@ -36,12 +42,22 @@ fun CalendarDayCell(
     ) {
         if (day.position == DayPosition.MonthDate) {
             Column(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(2.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(
+                        if (isToday) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                        else androidx.compose.ui.graphics.Color.Transparent
+                    ),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
                     text = day.date.dayOfMonth.toString(),
-                    modifier = Modifier.padding(top = 4.dp)
+                    modifier = Modifier.padding(top = 4.dp),
+                    color = if (isToday) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.onSurface,
+                    fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal
                 )
                 Box(
                     modifier = Modifier
