@@ -24,6 +24,7 @@ import androidx.navigation.NavHostController
 import com.jstr14.picaday.ui.calendar.components.CalendarDayCell
 import com.jstr14.picaday.ui.calendar.components.CalendarHeader
 import com.jstr14.picaday.ui.calendar.components.DaysOfWeekTitle
+import com.jstr14.picaday.ui.calendar.components.YearOverviewCalendar
 import com.jstr14.picaday.ui.navigation.Screen
 import com.kizitonwose.calendar.compose.HorizontalCalendar
 import com.kizitonwose.calendar.compose.rememberCalendarState
@@ -54,7 +55,20 @@ fun CalendarScreen(
     val entries by viewModel.entries.collectAsState()
     val visibleMonth = remember(state.firstVisibleMonth) { state.firstVisibleMonth.yearMonth }
     val isUploading by viewModel.isUploading.collectAsState()
-    val isCurrentMonth = visibleMonth == currentMonth
+    val yearEntryDates by viewModel.yearEntryDates.collectAsState()
+    var isYearMode by remember { mutableStateOf(false) }
+    var yearModeYear by remember { mutableStateOf(currentMonth.year) }
+
+    LaunchedEffect(isYearMode, yearModeYear) {
+        if (isYearMode) viewModel.loadYearData(yearModeYear)
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.scrollToToday.collect {
+            isYearMode = false
+            state.animateScrollToMonth(currentMonth)
+        }
+    }
 
     val pickMultipleMedia = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickMultipleVisualMedia(maxItems = 10)
@@ -66,19 +80,22 @@ fun CalendarScreen(
 
     LaunchedEffect(visibleMonth) {
         viewModel.loadMonthData(visibleMonth)
+        viewModel.updateVisibleMonth(visibleMonth)
     }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = {
-                    pickMultipleMedia.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-                },
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "Subir foto")
+            if (!isYearMode) {
+                FloatingActionButton(
+                    onClick = {
+                        pickMultipleMedia.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                    },
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = "Subir foto")
+                }
             }
         }
     ) { padding ->
@@ -92,26 +109,58 @@ fun CalendarScreen(
             Column(modifier = Modifier.fillMaxSize()) {
                 CalendarHeader(
                     visibleMonth = visibleMonth,
-                    isCurrentMonth = isCurrentMonth,
-                    onTodayClick = {
-                        scope.launch { state.animateScrollToMonth(currentMonth) }
+                    isYearMode = isYearMode,
+                    yearModeYear = yearModeYear,
+                    onPreviousMonthClick = {
+                        if (isYearMode) yearModeYear--
+                        else scope.launch { state.animateScrollToMonth(visibleMonth.minusMonths(1)) }
+                    },
+                    onNextMonthClick = {
+                        if (isYearMode) yearModeYear++
+                        else scope.launch { state.animateScrollToMonth(visibleMonth.plusMonths(1)) }
+                    },
+                    onMonthTitleClick = {
+                        if (!isYearMode) yearModeYear = visibleMonth.year
+                        isYearMode = !isYearMode
                     }
                 )
 
-                HorizontalCalendar(
-                    state = state,
-                    dayContent = { day ->
-                        val entryForDay = entries.find { it.date == day.date }
-                        CalendarDayCell(
-                            day = day,
-                            images = entryForDay?.imageUrls ?: emptyList(),
-                            isToday = day.date == today
-                        ) { clickedDay ->
-                            navController.navigate(Screen.DayDetail.createRoute(clickedDay.date.toString()))
+                AnimatedVisibility(
+                    visible = !isYearMode,
+                    enter = fadeIn(),
+                    exit = fadeOut()
+                ) {
+                    HorizontalCalendar(
+                        state = state,
+                        dayContent = { day ->
+                            val entryForDay = entries.find { it.date == day.date }
+                            CalendarDayCell(
+                                day = day,
+                                images = entryForDay?.imageUrls ?: emptyList(),
+                                isToday = day.date == today
+                            ) { clickedDay ->
+                                navController.navigate(Screen.DayDetail.createRoute(clickedDay.date.toString()))
+                            }
+                        },
+                        monthHeader = { DaysOfWeekTitle(daysOfWeek = daysOfWeek) }
+                    )
+                }
+
+                AnimatedVisibility(
+                    visible = isYearMode,
+                    enter = fadeIn(),
+                    exit = fadeOut()
+                ) {
+                    YearOverviewCalendar(
+                        year = yearModeYear,
+                        entryDates = yearEntryDates,
+                        firstDayOfWeek = daysOfWeek.first(),
+                        onMonthClick = { yearMonth ->
+                            isYearMode = false
+                            scope.launch { state.animateScrollToMonth(yearMonth) }
                         }
-                    },
-                    monthHeader = { DaysOfWeekTitle(daysOfWeek = daysOfWeek) }
-                )
+                    )
+                }
             }
 
             // Loading indicator

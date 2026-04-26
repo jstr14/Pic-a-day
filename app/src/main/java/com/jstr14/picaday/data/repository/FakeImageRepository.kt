@@ -32,6 +32,19 @@ class FakeImageRepository @Inject constructor() : ImageRepository {
         emit(entries)
     }
 
+    override fun getEntriesForYear(year: Int): Flow<List<DayEntry>> = flow {
+        val today = LocalDate.now()
+        val entries = (0..60).map { i -> today.minusDays(i.toLong()) }
+            .filter { it.year == year }
+            .map { date ->
+                DayEntry(
+                    date = date,
+                    imageUrls = listOf("https://picsum.photos/seed/${date.dayOfMonth}/200")
+                )
+            }
+        emit(entries)
+    }
+
     override suspend fun saveDayEntry(dayEntry: DayEntry) {
         Unit
     }

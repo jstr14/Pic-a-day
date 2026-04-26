@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.jstr14.picaday.domain.model.User
 import com.jstr14.picaday.domain.repository.AuthRepository
+import com.jstr14.picaday.domain.repository.SessionClearable
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -16,7 +17,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class AuthViewModel @Inject constructor(
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val sessionClearable: SessionClearable
 ) : ViewModel() {
 
     private val _isLoading = MutableStateFlow(false)
@@ -66,6 +68,7 @@ class AuthViewModel @Inject constructor(
     }
 
     fun signOut() {
+        sessionClearable.clearSession()
         viewModelScope.launch {
             authRepository.signOut()
         }
