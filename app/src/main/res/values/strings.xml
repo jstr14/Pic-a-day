@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">Pic-A-Day</string>
+    <string name="welcome_app_message">Welcome to Pic-A-Day</string>
 </resources>

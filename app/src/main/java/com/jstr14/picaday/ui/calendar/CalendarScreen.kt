@@ -8,6 +8,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -27,6 +28,8 @@ import com.jstr14.picaday.ui.navigation.Screen
 import com.kizitonwose.calendar.compose.HorizontalCalendar
 import com.kizitonwose.calendar.compose.rememberCalendarState
 import com.kizitonwose.calendar.core.daysOfWeek
+import kotlinx.coroutines.launch
+import java.time.LocalDate
 import java.time.YearMonth
 
 @Composable
@@ -34,10 +37,12 @@ fun CalendarScreen(
     navController: NavHostController,
     viewModel: CalendarViewModel = hiltViewModel()
 ) {
+    val today = remember { LocalDate.now() }
     val currentMonth = remember { YearMonth.now() }
     val startMonth = remember { currentMonth.minusMonths(120) }
     val endMonth = remember { currentMonth.plusMonths(120) }
     val daysOfWeek = remember { daysOfWeek() }
+    val scope = rememberCoroutineScope()
 
     val state = rememberCalendarState(
         startMonth = startMonth,
@@ -49,6 +54,7 @@ fun CalendarScreen(
     val entries by viewModel.entries.collectAsState()
     val visibleMonth = remember(state.firstVisibleMonth) { state.firstVisibleMonth.yearMonth }
     val isUploading by viewModel.isUploading.collectAsState()
+    val isCurrentMonth = visibleMonth == currentMonth
 
     val pickMultipleMedia = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickMultipleVisualMedia(maxItems = 10)
@@ -63,6 +69,7 @@ fun CalendarScreen(
     }
 
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
         floatingActionButton = {
             FloatingActionButton(
                 onClick = {
@@ -78,11 +85,18 @@ fun CalendarScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
                 .padding(padding)
         ) {
             // Calendar - Main content
             Column(modifier = Modifier.fillMaxSize()) {
-                CalendarHeader(visibleMonth = visibleMonth)
+                CalendarHeader(
+                    visibleMonth = visibleMonth,
+                    isCurrentMonth = isCurrentMonth,
+                    onTodayClick = {
+                        scope.launch { state.animateScrollToMonth(currentMonth) }
+                    }
+                )
 
                 HorizontalCalendar(
                     state = state,
@@ -90,7 +104,8 @@ fun CalendarScreen(
                         val entryForDay = entries.find { it.date == day.date }
                         CalendarDayCell(
                             day = day,
-                            images = entryForDay?.imageUrls ?: emptyList()
+                            images = entryForDay?.imageUrls ?: emptyList(),
+                            isToday = day.date == today
                         ) { clickedDay ->
                             navController.navigate(Screen.DayDetail.createRoute(clickedDay.date.toString()))
                         }

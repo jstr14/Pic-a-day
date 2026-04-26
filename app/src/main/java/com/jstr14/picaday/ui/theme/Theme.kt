@@ -1,7 +1,6 @@
 package com.jstr14.picaday.ui.theme
 
 import android.app.Activity
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.darkColorScheme
@@ -18,7 +17,7 @@ import com.jstr14.picaday.ui.theme.util.SeasonManager
 fun PicADayTheme(
     specialDay: SeasonManager.SpecialDay = SeasonManager.getSpecialDay(),
     season: Season = SeasonManager.getCurrentSeason(),
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    darkTheme: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val colorScheme: ColorScheme = when {
