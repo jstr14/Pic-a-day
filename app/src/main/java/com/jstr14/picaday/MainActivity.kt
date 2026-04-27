@@ -22,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.jstr14.picaday.ui.theme.logo.PicADayLogo
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.core.view.WindowCompat
 import androidx.navigation.compose.rememberNavController
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
@@ -61,6 +62,10 @@ class MainActivity : ComponentActivity() {
         val splashScreen = installSplashScreen()
 
         super.onCreate(savedInstanceState)
+
+        // Let Compose handle all window insets (status bar, nav bar, IME)
+        // so imePadding() / navigationBarsPadding() etc. work correctly.
+        WindowCompat.setDecorFitsSystemWindows(window, false)
 
         AppIconManager.update(this)
 

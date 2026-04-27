@@ -7,7 +7,8 @@ import java.time.LocalDate
  */
 data class DayEntry(
     val date: LocalDate,
-    val imageUrls: List<String>,
-    val totalCount: Int = imageUrls.size,
+    val photos: List<Photo>,
     val description: String? = null,
-)
+) {
+    val imageUrls: List<String> get() = photos.map { it.url }
+}

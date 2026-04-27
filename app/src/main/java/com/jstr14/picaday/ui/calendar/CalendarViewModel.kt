@@ -89,8 +89,7 @@ class CalendarViewModel @Inject constructor(
                     }
 
                     if (url != null) {
-                        // 3. Registro en Firestore en la fecha detectada
-                        imageRepository.addPhotoToDate(processed.date, url)
+                        imageRepository.addPhotoToDate(processed.date, url, processed.time, processed.lat, processed.lon)
                     }
                 } catch (e: Exception) {
                     e.printStackTrace()
