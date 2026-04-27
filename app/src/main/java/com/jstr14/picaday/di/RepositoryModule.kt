@@ -2,6 +2,7 @@ package com.jstr14.picaday.di
 
 import com.jstr14.picaday.data.repository.FirebaseImageRepositoryImpl
 import com.jstr14.picaday.data.repository.ImageRepository
+import com.jstr14.picaday.domain.repository.SessionClearable
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -17,4 +18,10 @@ abstract class RepositoryModule {
     abstract fun bindFirebaseImageRepository(
         firebaseImageRepositoryImpl: FirebaseImageRepositoryImpl
     ): ImageRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindSessionClearable(
+        firebaseImageRepositoryImpl: FirebaseImageRepositoryImpl
+    ): SessionClearable
 }

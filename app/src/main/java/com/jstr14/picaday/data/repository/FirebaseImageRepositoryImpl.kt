@@ -4,10 +4,12 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
+import com.jstr14.picaday.data.cache.CalendarCache
 import com.jstr14.picaday.data.model.DayEntryDto
 import com.jstr14.picaday.data.model.toDomain
 import com.jstr14.picaday.data.model.toDto
 import com.jstr14.picaday.domain.model.DayEntry
+import com.jstr14.picaday.domain.repository.SessionClearable
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -20,7 +22,13 @@ import javax.inject.Inject
 class FirebaseImageRepositoryImpl @Inject constructor(
     private val firestore: FirebaseFirestore,
     private val auth: FirebaseAuth
-) : ImageRepository {
+) : ImageRepository, SessionClearable {
+
+    private val cache = CalendarCache()
+
+    override fun clearSession() {
+        cache.clear()
+    }
 
     // current userId
     private val userId: String?
@@ -29,12 +37,13 @@ class FirebaseImageRepositoryImpl @Inject constructor(
     override fun getEntriesForMonth(month: YearMonth): Flow<List<DayEntry>> {
         val currentUid = userId ?: return flowOf(emptyList())
 
-        // Mapping YearMonth object to string in the format "yyyy-MM" for the query
+        cache.get(month)?.let { return flowOf(it) }
+
         val monthQueryString = "${month.year}-${month.monthValue.toString().padStart(2, '0')}"
 
         return callbackFlow {
             val query = firestore.collection("users")
-                .document(currentUid) //
+                .document(currentUid)
                 .collection("entries")
                 .whereEqualTo("yearMonth", monthQueryString)
 
@@ -43,11 +52,44 @@ class FirebaseImageRepositoryImpl @Inject constructor(
                     close(error)
                     return@addSnapshotListener
                 }
-
                 val entries = snapshot?.documents?.mapNotNull { doc ->
                     doc.toObject(DayEntryDto::class.java)?.toDomain()
                 } ?: emptyList()
+                cache.put(month, entries)
+                trySend(entries)
+            }
+            awaitClose { subscription.remove() }
+        }
+    }
 
+    override fun getEntriesForYear(year: Int): Flow<List<DayEntry>> {
+        val currentUid = userId ?: return flowOf(emptyList())
+
+        if (cache.allMonthsCached(year)) return flowOf(cache.getYear(year))
+
+        val yearStart = "$year-01"
+        val yearEnd = "$year-12"
+
+        return callbackFlow {
+            val query = firestore.collection("users")
+                .document(currentUid)
+                .collection("entries")
+                .whereGreaterThanOrEqualTo("yearMonth", yearStart)
+                .whereLessThanOrEqualTo("yearMonth", yearEnd)
+
+            val subscription = query.addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    close(error)
+                    return@addSnapshotListener
+                }
+                val entries = snapshot?.documents?.mapNotNull { doc ->
+                    doc.toObject(DayEntryDto::class.java)?.toDomain()
+                } ?: emptyList()
+                val byMonth = entries.groupBy { YearMonth.from(it.date) }
+                (1..12).forEach { m ->
+                    val month = YearMonth.of(year, m)
+                    cache.put(month, byMonth[month] ?: emptyList())
+                }
                 trySend(entries)
             }
             awaitClose { subscription.remove() }
@@ -85,6 +127,7 @@ class FirebaseImageRepositoryImpl @Inject constructor(
                 .document(date.toString())
                 .update("imageUrls", newUrls)
                 .await()
+            cache.invalidate(YearMonth.from(date))
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -99,6 +142,7 @@ class FirebaseImageRepositoryImpl @Inject constructor(
                 .document(date.toString())
                 .delete()
                 .await()
+            cache.invalidate(YearMonth.from(date))
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -115,10 +159,11 @@ class FirebaseImageRepositoryImpl @Inject constructor(
         val data = mapOf(
             "date" to dateStr,
             "yearMonth" to yearMonth,
-            "imageUrls" to FieldValue.arrayUnion(imageUrl) // ESTO es la clave para multi-subida
+            "imageUrls" to FieldValue.arrayUnion(imageUrl) // to upload mutiple data
         )
 
-        // set con merge: true para que no borre la descripción si ya existía
+        // set with merge: true to avoid remove the description if exists
         docRef.set(data, SetOptions.merge()).await()
+        cache.invalidate(YearMonth.from(date))
     }
 }

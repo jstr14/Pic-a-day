@@ -13,6 +13,11 @@ interface ImageRepository {
      * Retrieves all entries for a specific month.
      */
     fun getEntriesForMonth(month: YearMonth): Flow<List<DayEntry>>
+
+    /**
+     * Retrieves all entries for a specific year.
+     */
+    fun getEntriesForYear(year: Int): Flow<List<DayEntry>>
     /**
      * Save day entry in Firebase.
      */
