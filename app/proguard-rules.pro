@@ -1,4 +1,12 @@
 # Add project specific ProGuard rules here.
+
+# Keep Firestore data model classes — R8 obfuscates field names which breaks
+# Firestore's reflection-based serialization/deserialization.
+-keep class com.jstr14.picaday.data.model.** { *; }
+
+# Keep line numbers in stack traces for Crashlytics
+-keepattributes SourceFile,LineNumberTable
+-renamesourcefileattribute SourceFile
 # You can control the set of applied configuration files using the
 # proguardFiles setting in build.gradle.
 #
