@@ -7,7 +7,7 @@ import java.time.LocalDate
 fun DayEntryDto.toDomain(): DayEntry {
     // Prefer the new `photos` list; fall back to legacy `imageUrls` for old Firestore documents
     val resolvedPhotos = if (photos.isNotEmpty()) {
-        photos.map { it.toDomain() }
+        photos.map { it.toDomain() }.sortedBy { it.time }
     } else {
         imageUrls.map { Photo(url = it) }
     }
