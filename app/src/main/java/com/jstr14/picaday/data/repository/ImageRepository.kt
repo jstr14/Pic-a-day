@@ -1,6 +1,7 @@
 package com.jstr14.picaday.data.repository
 
 import com.jstr14.picaday.domain.model.DayEntry
+import com.jstr14.picaday.domain.model.Photo
 import kotlinx.coroutines.flow.Flow
 import java.time.LocalDate
 import java.time.YearMonth
@@ -23,9 +24,11 @@ interface ImageRepository {
      */
     suspend fun saveDayEntry(dayEntry: DayEntry)
 
-    suspend fun updateImageUrls(date: LocalDate, newUrls: List<String>)
+    suspend fun updatePhotos(date: LocalDate, photos: List<Photo>)
 
     suspend fun deleteDayEntry(date: LocalDate)
 
-    suspend fun addPhotoToDate(date: LocalDate, imageUrl: String)
+    suspend fun addPhotoToDate(date: LocalDate, imageUrl: String, time: String? = null, lat: Double? = null, lon: Double? = null)
+
+    suspend fun updateDescription(date: LocalDate, description: String)
 }

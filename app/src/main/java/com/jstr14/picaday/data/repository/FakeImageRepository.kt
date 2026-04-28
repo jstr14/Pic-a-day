@@ -1,6 +1,7 @@
 package com.jstr14.picaday.data.repository
 
 import com.jstr14.picaday.domain.model.DayEntry
+import com.jstr14.picaday.domain.model.Photo
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import java.time.LocalDate
@@ -21,10 +22,10 @@ class FakeImageRepository @Inject constructor() : ImageRepository {
             entries.add(
                 DayEntry(
                     date = date,
-                    imageUrls = listOf(
-                        "https://picsum.photos/seed/${date.dayOfMonth}/200",
-                        "https://picsum.photos/seed/${date.dayOfMonth + 100}/200",
-                        "https://picsum.photos/seed/${date.dayOfMonth + 200}/200"
+                    photos = listOf(
+                        Photo(url = "https://picsum.photos/seed/${date.dayOfMonth}/200"),
+                        Photo(url = "https://picsum.photos/seed/${date.dayOfMonth + 100}/200"),
+                        Photo(url = "https://picsum.photos/seed/${date.dayOfMonth + 200}/200"),
                     )
                 )
             )
@@ -39,7 +40,7 @@ class FakeImageRepository @Inject constructor() : ImageRepository {
             .map { date ->
                 DayEntry(
                     date = date,
-                    imageUrls = listOf("https://picsum.photos/seed/${date.dayOfMonth}/200")
+                    photos = listOf(Photo(url = "https://picsum.photos/seed/${date.dayOfMonth}/200"))
                 )
             }
         emit(entries)
@@ -49,10 +50,7 @@ class FakeImageRepository @Inject constructor() : ImageRepository {
         Unit
     }
 
-    override suspend fun updateImageUrls(
-        date: LocalDate,
-        newUrls: List<String>
-    ) {
+    override suspend fun updatePhotos(date: LocalDate, photos: List<Photo>) {
         Unit
     }
 
@@ -60,7 +58,11 @@ class FakeImageRepository @Inject constructor() : ImageRepository {
         Unit
     }
 
-    override suspend fun addPhotoToDate(date: LocalDate, imageUrl: String) {
+    override suspend fun addPhotoToDate(date: LocalDate, imageUrl: String, time: String?, lat: Double?, lon: Double?) {
+        Unit
+    }
+
+    override suspend fun updateDescription(date: LocalDate, description: String) {
         Unit
     }
 }

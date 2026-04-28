@@ -9,6 +9,7 @@ import com.jstr14.picaday.data.model.DayEntryDto
 import com.jstr14.picaday.data.model.toDomain
 import com.jstr14.picaday.data.model.toDto
 import com.jstr14.picaday.domain.model.DayEntry
+import com.jstr14.picaday.domain.model.Photo
 import com.jstr14.picaday.domain.repository.SessionClearable
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -118,14 +119,22 @@ class FirebaseImageRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun updateImageUrls(date: LocalDate, newUrls: List<String>) {
+    override suspend fun updatePhotos(date: LocalDate, photos: List<Photo>) {
         val uid = userId ?: return
         try {
+            val photoMaps = photos.map { photo ->
+                buildMap<String, Any?> {
+                    put("url", photo.url)
+                    if (photo.time != null) put("time", photo.time)
+                    if (photo.lat != null) put("lat", photo.lat)
+                    if (photo.lon != null) put("lon", photo.lon)
+                }
+            }
             firestore.collection("users")
                 .document(uid)
                 .collection("entries")
                 .document(date.toString())
-                .update("imageUrls", newUrls)
+                .update("photos", photoMaps)
                 .await()
             cache.invalidate(YearMonth.from(date))
         } catch (e: Exception) {
@@ -148,7 +157,22 @@ class FirebaseImageRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun addPhotoToDate(date: LocalDate, imageUrl: String) {
+    override suspend fun updateDescription(date: LocalDate, description: String) {
+        val uid = userId ?: return
+        try {
+            firestore.collection("users")
+                .document(uid)
+                .collection("entries")
+                .document(date.toString())
+                .update("description", description.ifBlank { null })
+                .await()
+            cache.invalidate(YearMonth.from(date))
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    override suspend fun addPhotoToDate(date: LocalDate, imageUrl: String, time: String?, lat: Double?, lon: Double?) {
         val uid = userId ?: return
         val dateStr = date.toString()
         val yearMonth = "${date.year}-${date.monthValue.toString().padStart(2, '0')}"
@@ -156,13 +180,20 @@ class FirebaseImageRepositoryImpl @Inject constructor(
         val docRef = firestore.collection("users").document(uid)
             .collection("entries").document(dateStr)
 
-        val data = mapOf(
-            "date" to dateStr,
-            "yearMonth" to yearMonth,
-            "imageUrls" to FieldValue.arrayUnion(imageUrl) // to upload mutiple data
-        )
+        val photoMap = buildMap<String, Any?> {
+            put("url", imageUrl)
+            if (time != null) put("time", time)
+            if (lat != null) put("lat", lat)
+            if (lon != null) put("lon", lon)
+        }
 
-        // set with merge: true to avoid remove the description if exists
+        val data = buildMap<String, Any> {
+            put("date", dateStr)
+            put("yearMonth", yearMonth)
+            put("photos", FieldValue.arrayUnion(photoMap))
+        }
+
+        // set with merge: true to avoid removing existing fields (description, time, etc.)
         docRef.set(data, SetOptions.merge()).await()
         cache.invalidate(YearMonth.from(date))
     }

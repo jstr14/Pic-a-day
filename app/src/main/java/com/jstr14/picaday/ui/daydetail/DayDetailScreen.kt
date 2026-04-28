@@ -1,38 +1,66 @@
 package com.jstr14.picaday.ui.daydetail
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.*
+import androidx.core.content.ContextCompat
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.exponentialDecay
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.gestures.AnchoredDraggableState
+import androidx.compose.foundation.gestures.DraggableAnchors
+import androidx.compose.foundation.gestures.animateTo
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AddPhotoAlternate
-import androidx.compose.material.icons.filled.DeleteForever
-import androidx.compose.material.icons.filled.DeleteOutline
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import coil.compose.AsyncImage
 import com.jstr14.picaday.ui.theme.logo.PicADayLogo
 import java.time.LocalDate
-import java.time.format.DateTimeFormatter
-import java.time.format.FormatStyle
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun DayDetailScreen(
     date: String,
@@ -42,277 +70,240 @@ fun DayDetailScreen(
     val dayEntry by viewModel.state.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val isUploading by viewModel.isUploading.collectAsState()
+    val isDeleting by viewModel.isDeleting.collectAsState()
+    val saveResult by viewModel.saveToGalleryResult.collectAsState()
 
-    var showDeleteDayDialog by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    val density = LocalDensity.current
+    var isEditingDescription by remember { mutableStateOf(false) }
+    var descriptionText by remember(dayEntry?.description) { mutableStateOf(dayEntry?.description ?: "") }
+    val focusRequester = remember { FocusRequester() }
+    var isZoomed by remember { mutableStateOf(false) }
+    val descriptionBringIntoViewRequester = remember { BringIntoViewRequester() }
 
-    val pickMultipleMedia = rememberLauncherForActivityResult(
+    val imageCount = dayEntry?.imageUrls?.size ?: 0
+    val pagerState = rememberPagerState { imageCount }
+    val hasData = !isLoading && dayEntry != null
+    var sheetContentHeightPx by remember { mutableStateOf(0f) }
+
+    LaunchedEffect(saveResult) {
+        saveResult ?: return@LaunchedEffect
+        val message = if (saveResult is SaveResult.Success) "Guardado en galería" else "Error al guardar"
+        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+        viewModel.clearSaveResult()
+    }
+
+    LaunchedEffect(isEditingDescription) {
+        if (isEditingDescription) focusRequester.requestFocus()
+    }
+
+    LaunchedEffect(descriptionText) {
+        if (isEditingDescription) descriptionBringIntoViewRequester.bringIntoView()
+    }
+
+    LaunchedEffect(date) { viewModel.loadData(date) }
+
+    val pickMediaForEmptyState = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickMultipleVisualMedia(maxItems = 10)
     ) { uris ->
-        if (uris.isNotEmpty()) {
-            val localDate = LocalDate.parse(date)
-            viewModel.addMultiplePhotosToSpecificDay(
-                date = localDate,
-                uris = uris
-            )
+        if (uris.isNotEmpty()) viewModel.addMultiplePhotosToSpecificDay(LocalDate.parse(date), uris)
+    }
+
+    val mediaLocationPermissionForEmptyState = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) {
+        pickMediaForEmptyState.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+    }
+
+    fun launchEmptyStatePickerWithLocationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_MEDIA_LOCATION)
+                != PackageManager.PERMISSION_GRANTED
+        ) {
+            mediaLocationPermissionForEmptyState.launch(Manifest.permission.ACCESS_MEDIA_LOCATION)
+        } else {
+            pickMediaForEmptyState.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
         }
     }
 
-    LaunchedEffect(date) {
-        viewModel.loadData(date)
-    }
-
-    // Confirmation dialog for deleting the whole day
-    if (showDeleteDayDialog) {
-        AlertDialog(
-            onDismissRequest = { showDeleteDayDialog = false },
-            title = { Text("¿Borrar día completo?") },
-            text = { Text("Se eliminarán permanentemente todas las fotos y el texto de este día.") },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        viewModel.deleteFullDay(LocalDate.parse(date)) {
-                            onBack()
-                        }
-                        showDeleteDayDialog = false
-                    },
-                    colors = ButtonDefaults.textButtonColors(contentColor = Color.Red)
-                ) { Text("Borrar Todo") }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteDayDialog = false }) { Text("Cancelar") }
-            }
+    val sheetState = remember {
+        AnchoredDraggableState(
+            initialValue = false,
+            positionalThreshold = { it * 0.05f },
+            velocityThreshold = { with(density) { 20.dp.toPx() } },
+            snapAnimationSpec = spring(
+                dampingRatio = Spring.DampingRatioNoBouncy,
+                stiffness = Spring.StiffnessLow
+            ),
+            decayAnimationSpec = exponentialDecay()
         )
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black)
-    ) {
-        when {
-            // State 1: Loading data
-            isLoading && dayEntry == null -> {
-                Column(
-                    modifier = Modifier.align(Alignment.Center),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    CircularProgressIndicator(color = Color.White)
-                    Spacer(Modifier.height(16.dp))
-                    Text("Buscando recuerdos...", color = Color.White)
-                }
-            }
+    LaunchedEffect(isEditingDescription) {
+        if (isEditingDescription) sheetState.animateTo(true)
+    }
 
-            // State 2: Empty data
-            !isLoading && dayEntry == null -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(MaterialTheme.colorScheme.background),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        modifier = Modifier.padding(40.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        PicADayLogo(logoSize = 130.dp)
-                        Spacer(Modifier.height(24.dp))
-                        Text(
-                            text = date.toPrettyDate(),
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary,
-                            textAlign = TextAlign.Center
-                        )
-                        Spacer(Modifier.height(8.dp))
-                        Text(
-                            text = "Aún no hay recuerdos para este día",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
-                            textAlign = TextAlign.Center
-                        )
-                        Spacer(Modifier.height(4.dp))
-                        Text(
-                            text = "Pulsa el botón + para añadir tu primera foto",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.45f),
-                            textAlign = TextAlign.Center
-                        )
-                    }
-                }
-            }
+    val screenHeightPx = with(density) { LocalConfiguration.current.screenHeightDp.dp.toPx() }
 
-            // State 3: Show Data
-            else -> {
-                dayEntry?.let { entry ->
-                    val pagerState = rememberPagerState { entry.imageUrls.size }
+    Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
+        val peekHeightPx = with(density) { 20.dp.toPx() }
+        val collapsedOffsetPx = screenHeightPx - peekHeightPx
+        val statusBarTopPx = with(density) {
+            WindowInsets.statusBars.asPaddingValues().calculateTopPadding().toPx()
+        }
+        val minSheetTopOffsetPx = statusBarTopPx + with(density) { 16.dp.toPx() }
+        val maxSheetTopOffsetPx = screenHeightPx * 0.45f
+        val expandedOffsetPx = if (sheetContentHeightPx > 0f) {
+            (screenHeightPx - sheetContentHeightPx).coerceIn(minSheetTopOffsetPx, maxSheetTopOffsetPx)
+        } else {
+            maxSheetTopOffsetPx
+        }
 
-                    if (entry.imageUrls.isNotEmpty()) {
-                        HorizontalPager(
-                            state = pagerState,
-                            modifier = Modifier.fillMaxSize()
-                        ) { page ->
-                            AsyncImage(
-                                model = entry.imageUrls[page],
-                                contentDescription = null,
-                                modifier = Modifier.fillMaxSize(),
-                                contentScale = ContentScale.Fit
-                            )
-                        }
-
-                        // Top gradient scrim for icon visibility
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(120.dp)
-                                .align(Alignment.TopCenter)
-                                .background(
-                                    brush = Brush.verticalGradient(
-                                        colors = listOf(Color.Black.copy(alpha = 0.6f), Color.Transparent)
-                                    )
-                                )
-                        )
-
-                        // Page indicator
-                        Text(
-                            text = "${pagerState.currentPage + 1} / ${entry.imageUrls.size}",
-                            color = Color.White,
-                            modifier = Modifier
-                                .statusBarsPadding()
-                                .padding(top = 60.dp, end = 16.dp)
-                                .align(Alignment.TopEnd)
-                                .background(
-                                    color = Color.Black.copy(alpha = 0.4f),
-                                    shape = RoundedCornerShape(12.dp)
-                                )
-                                .padding(horizontal = 8.dp, vertical = 4.dp),
-                            style = MaterialTheme.typography.labelLarge
-                        )
-
-                        // Remove current photo
-                        IconButton(
-                            onClick = {
-                                val currentUrl = entry.imageUrls[pagerState.currentPage]
-                                viewModel.deletePhoto(LocalDate.parse(date), currentUrl)
-                            },
-                            modifier = Modifier
-                                .statusBarsPadding()
-                                .padding(top = 8.dp, end = 56.dp)
-                                .align(Alignment.TopEnd)
-                        ) {
-                            Icon(Icons.Default.DeleteOutline, "Borrar foto", tint = Color.White.copy(alpha = 0.7f))
-                        }
-                    }
-
-                    // Remove whole day data
-                    IconButton(
-                        onClick = { showDeleteDayDialog = true },
-                        modifier = Modifier
-                            .statusBarsPadding()
-                            .padding(8.dp)
-                            .align(Alignment.TopEnd)
-                    ) {
-                        Icon(Icons.Default.DeleteForever, "Borrar todo", tint = MaterialTheme.colorScheme.error)
-                    }
-
-                    // Bottom panel with text
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .align(Alignment.BottomCenter)
-                            .background(
-                                brush = Brush.verticalGradient(
-                                    colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.7f), Color.Black)
-                                )
-                            )
-                            .navigationBarsPadding()
-                            .padding(start = 20.dp, end = 85.dp, top = 60.dp, bottom = 32.dp)
-                    ) {
-                        Column {
-                            Text(date.toPrettyDate(), color = Color.White, style = MaterialTheme.typography.titleLarge)
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                text = entry.description ?: "Sin descripción.",
-                                color = Color.LightGray,
-                                style = MaterialTheme.typography.bodyLarge,
-                                maxLines = 4,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
-                    }
-                }
+        SideEffect {
+            if (hasData) {
+                sheetState.updateAnchors(DraggableAnchors {
+                    false at collapsedOffsetPx
+                    true at expandedOffsetPx
+                })
             }
         }
 
-        // Uploading indicator
-        AnimatedVisibility(
-            visible = isUploading,
-            enter = fadeIn() + slideInVertically(initialOffsetY = { it }),
-            exit = fadeOut() + slideOutVertically(targetOffsetY = { it }),
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 120.dp)
-                .padding(horizontal = 24.dp)
-        ) {
-            Surface(
-                shape = RoundedCornerShape(24.dp),
-                color = MaterialTheme.colorScheme.inverseSurface,
-                tonalElevation = 8.dp
+        val rawOffset = sheetState.offset
+        val sheetOffsetPx = if (rawOffset.isNaN()) collapsedOffsetPx else rawOffset
+        val sheetProgress = ((collapsedOffsetPx - sheetOffsetPx) / (collapsedOffsetPx - expandedOffsetPx))
+            .coerceIn(0f, 1f)
+
+        if (isLoading && dayEntry == null) {
+            Column(
+                modifier = Modifier.align(Alignment.Center),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(16.dp),
-                        strokeWidth = 2.dp,
-                        color = MaterialTheme.colorScheme.inverseOnSurface
-                    )
-                    Spacer(Modifier.width(12.dp))
-                    Text(
-                        text = "Añadiendo recuerdos...",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.inverseOnSurface
-                    )
-                }
+                CircularProgressIndicator(color = Color.White)
+                Spacer(Modifier.height(16.dp))
+                Text("Buscando recuerdos...", color = Color.White)
             }
         }
 
-        // back button — tint adapts to background (light on photos, themed on empty state)
-        val backTint = if (!isLoading && dayEntry == null)
-            MaterialTheme.colorScheme.onBackground else Color.White
-        IconButton(
-            onClick = onBack,
-            modifier = Modifier
-                .statusBarsPadding()
-                .padding(8.dp)
-                .align(Alignment.TopStart)
-        ) {
-            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Atrás", tint = backTint)
+        if (!isLoading && dayEntry == null) {
+            EmptyDayContent(date = date, isUploading = isUploading)
         }
 
-        // FAB
-        FloatingActionButton(
-            onClick = {
-                pickMultipleMedia.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-            },
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .navigationBarsPadding()
-                .padding(16.dp),
-            containerColor = MaterialTheme.colorScheme.primaryContainer,
-            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-        ) {
-            Icon(Icons.Default.AddPhotoAlternate, "Añadir")
+        dayEntry?.let { entry ->
+            DayImageSection(
+                entry = entry,
+                pagerState = pagerState,
+                date = date,
+                sheetState = sheetState,
+                collapsedOffsetPx = collapsedOffsetPx,
+                sheetOffsetPx = sheetOffsetPx,
+                sheetProgress = sheetProgress,
+                isZoomed = isZoomed,
+                onZoomChanged = { isZoomed = it },
+                isUploading = isUploading,
+                isDeleting = isDeleting,
+                onSaveToGallery = { viewModel.saveImageToGallery(it) },
+                onDeletePhoto = { d, url -> viewModel.deletePhoto(d, url) },
+                onBack = onBack,
+                onDeleteAll = { viewModel.deleteFullDay(LocalDate.parse(date)) { onBack() } },
+                onAddPhotos = { d, uris -> viewModel.addMultiplePhotosToSpecificDay(d, uris) }
+            )
+            DayDetailSheet(
+                entry = entry,
+                date = date,
+                currentPhotoIndex = pagerState.currentPage,
+                sheetState = sheetState,
+                sheetOffsetPx = sheetOffsetPx,
+                maxSheetHeightDp = with(density) { (screenHeightPx - minSheetTopOffsetPx).toDp() },
+                onSizeChanged = { sheetContentHeightPx = it.toFloat() },
+                isEditingDescription = isEditingDescription,
+                onEditingDescriptionChanged = { isEditingDescription = it },
+                descriptionText = descriptionText,
+                onDescriptionTextChanged = { descriptionText = it },
+                focusRequester = focusRequester,
+                bringIntoViewRequester = descriptionBringIntoViewRequester,
+                onSaveDescription = { d, text -> viewModel.updateDescription(d, text) }
+            )
+        }
+
+        // Back button — only for loading / empty states (data state has its own in DayImageSection)
+        if (dayEntry == null) {
+            IconButton(
+                onClick = onBack,
+                modifier = Modifier
+                    .statusBarsPadding()
+                    .padding(4.dp)
+                    .align(Alignment.TopStart)
+            ) {
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, "Atrás", tint = MaterialTheme.colorScheme.onBackground)
+            }
+        }
+
+        // FAB for empty state — hidden while uploading
+        if (!isLoading && !isUploading && dayEntry == null) {
+            FloatingActionButton(
+                onClick = { launchEmptyStatePickerWithLocationPermission() },
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .navigationBarsPadding()
+                    .padding(16.dp),
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+            ) {
+                Icon(Icons.Default.AddPhotoAlternate, "Añadir fotos")
+            }
         }
     }
 }
 
-fun String.toPrettyDate(): String {
-    return try {
-        val localDate = LocalDate.parse(this)
-        val formatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG)
-        localDate.format(formatter)
-    } catch (e: Exception) {
-        this
+@Composable
+private fun EmptyDayContent(date: String, isUploading: Boolean) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background),
+        contentAlignment = Alignment.Center
+    ) {
+        if (isUploading) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                Spacer(Modifier.height(16.dp))
+                Text(
+                    text = "Guardando tus recuerdos...",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                )
+            }
+        } else {
+            Column(
+                modifier = Modifier.padding(40.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                PicADayLogo(logoSize = 130.dp)
+                Spacer(Modifier.height(24.dp))
+                Text(
+                    text = date.toPrettyDate(),
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    text = "Aún no hay recuerdos para este día",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                    textAlign = TextAlign.Center
+                )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = "Pulsa el botón de abajo para añadir tu primer recuerdo",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.45f),
+                    textAlign = TextAlign.Center
+                )
+            }
+        }
     }
 }
