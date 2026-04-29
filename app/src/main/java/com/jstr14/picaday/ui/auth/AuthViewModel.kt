@@ -52,19 +52,21 @@ class AuthViewModel @Inject constructor(
     }
 
     fun signInWithGoogle(idToken: String) {
-        if (idToken.isBlank()) {
-            _errorEvents.value = "Invalid Token"
-            return
-        }
         viewModelScope.launch {
             _isLoading.value = true
             _errorEvents.value = null
             val result = authRepository.signInWithGoogle(idToken)
-            result.onFailure { exception ->
-                _errorEvents.value = "Google Sign-In failed: ${exception.message}"
-            }
+            result.onFailure { _errorEvents.value = "Sign-In failed. Please try again." }
             _isLoading.value = false
         }
+    }
+
+    fun onGoogleSignInFailed() {
+        _errorEvents.value = "Sign-In failed. Please try again."
+    }
+
+    fun clearError() {
+        _errorEvents.value = null
     }
 
     fun signOut() {

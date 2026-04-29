@@ -4,7 +4,13 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -25,6 +31,19 @@ fun LoginScreen(
     onSignInClick: () -> Unit
 ) {
     val uiState by authViewModel.uiState.collectAsState()
+
+    if (uiState is AuthState.Error) {
+        AlertDialog(
+            onDismissRequest = { authViewModel.clearError() },
+            title = { Text("Sign-In failed") },
+            text = { Text((uiState as AuthState.Error).message) },
+            confirmButton = {
+                TextButton(onClick = { authViewModel.clearError() }) {
+                    Text("OK")
+                }
+            }
+        )
+    }
 
     Box(
         modifier = Modifier
@@ -60,21 +79,13 @@ fun LoginScreen(
             Spacer(Modifier.weight(1f))
 
             Box(modifier = Modifier.fillMaxWidth().padding(horizontal = 40.dp)) {
-                when (uiState) {
-                    is AuthState.Loading -> CircularProgressIndicator(
+                if (uiState is AuthState.Loading) {
+                    CircularProgressIndicator(
                         modifier = Modifier.align(Alignment.Center),
                         color = MaterialTheme.colorScheme.primary
                     )
-                    is AuthState.Error -> Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = (uiState as AuthState.Error).message,
-                            color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.bodySmall,
-                            modifier = Modifier.padding(bottom = 12.dp)
-                        )
-                        SignInButton(onClick = onSignInClick)
-                    }
-                    else -> SignInButton(onClick = onSignInClick)
+                } else {
+                    SignInButton(onClick = onSignInClick)
                 }
             }
 
