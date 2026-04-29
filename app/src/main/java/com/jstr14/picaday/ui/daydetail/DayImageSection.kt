@@ -15,6 +15,7 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.AnchoredDraggableState
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -25,8 +26,10 @@ import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -35,6 +38,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -46,6 +52,7 @@ import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.SaveAlt
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material.icons.outlined.GridView
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -107,6 +114,7 @@ internal fun DayImageSection(
     var pendingDeleteUrl by remember { mutableStateOf<String?>(null) }
     var showDeletePhotoDialog by remember { mutableStateOf(false) }
     var showDeleteDayDialog by remember { mutableStateOf(false) }
+    var isGridView by remember { mutableStateOf(false) }
 
     val savePermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -204,87 +212,99 @@ internal fun DayImageSection(
             }
     ) {
         if (entry.imageUrls.isNotEmpty()) {
-            HorizontalPager(
-                state = pagerState,
-                modifier = Modifier.fillMaxSize(),
-                userScrollEnabled = !isZoomed
-            ) { page ->
-                var scale by remember { mutableStateOf(1f) }
-                var panOffset by remember { mutableStateOf(Offset.Zero) }
-                LaunchedEffect(pagerState.currentPage) {
-                    if (pagerState.currentPage != page) {
-                        scale = 1f; panOffset = Offset.Zero; onZoomChanged(false)
+            if (isGridView) {
+                PhotoGrid(
+                    imageUrls = entry.imageUrls,
+                    onPhotoClick = { index ->
+                        isGridView = false
+                        coroutineScope.launch { pagerState.scrollToPage(index) }
                     }
-                }
-                AsyncImage(
-                    model = entry.imageUrls[page],
-                    contentDescription = null,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .pointerInput(Unit) {
-                            detectTapGestures(onDoubleTap = {
-                                scale = 1f; panOffset = Offset.Zero; onZoomChanged(false)
-                            })
+                )
+            } else {
+                HorizontalPager(
+                    state = pagerState,
+                    modifier = Modifier.fillMaxSize(),
+                    userScrollEnabled = !isZoomed
+                ) { page ->
+                    var scale by remember { mutableStateOf(1f) }
+                    var panOffset by remember { mutableStateOf(Offset.Zero) }
+                    LaunchedEffect(pagerState.currentPage) {
+                        if (pagerState.currentPage != page) {
+                            scale = 1f; panOffset = Offset.Zero; onZoomChanged(false)
                         }
-                        .pointerInput(Unit) {
-                            awaitEachGesture {
-                                awaitFirstDown(requireUnconsumed = false)
-                                do {
-                                    val event = awaitPointerEvent()
-                                    val multiTouch = event.changes.count { it.pressed } >= 2
-                                    if (multiTouch || scale > 1f) {
-                                        val zoomChange = event.calculateZoom()
-                                        val panChange = event.calculatePan()
-                                        val newScale = (scale * zoomChange).coerceIn(1f, 5f)
-                                        scale = newScale
-                                        panOffset = if (newScale <= 1f) Offset.Zero else panOffset + panChange
-                                        onZoomChanged(newScale > 1f)
-                                        event.changes.forEach { if (it.positionChanged()) it.consume() }
-                                    }
-                                } while (event.changes.any { it.pressed })
+                    }
+                    AsyncImage(
+                        model = entry.imageUrls[page],
+                        contentDescription = null,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .pointerInput(Unit) {
+                                detectTapGestures(onDoubleTap = {
+                                    scale = 1f; panOffset = Offset.Zero; onZoomChanged(false)
+                                })
                             }
-                        }
-                        .graphicsLayer {
-                            scaleX = scale; scaleY = scale
-                            translationX = panOffset.x; translationY = panOffset.y
-                        },
-                    contentScale = ContentScale.Fit
+                            .pointerInput(Unit) {
+                                awaitEachGesture {
+                                    awaitFirstDown(requireUnconsumed = false)
+                                    do {
+                                        val event = awaitPointerEvent()
+                                        val multiTouch = event.changes.count { it.pressed } >= 2
+                                        if (multiTouch || scale > 1f) {
+                                            val zoomChange = event.calculateZoom()
+                                            val panChange = event.calculatePan()
+                                            val newScale = (scale * zoomChange).coerceIn(1f, 5f)
+                                            scale = newScale
+                                            panOffset = if (newScale <= 1f) Offset.Zero else panOffset + panChange
+                                            onZoomChanged(newScale > 1f)
+                                            event.changes.forEach { if (it.positionChanged()) it.consume() }
+                                        }
+                                    } while (event.changes.any { it.pressed })
+                                }
+                            }
+                            .graphicsLayer {
+                                scaleX = scale; scaleY = scale
+                                translationX = panOffset.x; translationY = panOffset.y
+                            },
+                        contentScale = ContentScale.Fit
+                    )
+                }
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(120.dp)
+                        .align(Alignment.TopCenter)
+                        .background(Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.6f), Color.Transparent)))
+                )
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(220.dp)
+                        .align(Alignment.BottomCenter)
+                        .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.75f))))
                 )
             }
-
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(120.dp)
-                    .align(Alignment.TopCenter)
-                    .background(Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.6f), Color.Transparent)))
-            )
-
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(220.dp)
-                    .align(Alignment.BottomCenter)
-                    .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.75f))))
-            )
         }
 
-        // Top bar — back | date+time (center) | fav
-        Row(
+        // Top bar — back (start) | date+time (true center) | grid-toggle+fav (end)
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .align(Alignment.TopCenter)
                 .statusBarsPadding()
-                .padding(horizontal = 4.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .padding(horizontal = 4.dp)
         ) {
-            IconButton(onClick = onBack) {
+            IconButton(
+                onClick = onBack,
+                modifier = Modifier.align(Alignment.CenterStart)
+            ) {
                 Icon(Icons.AutoMirrored.Filled.ArrowBack, "Atrás", tint = Color.White)
             }
 
             Column(
                 modifier = Modifier
-                    .weight(1f)
+                    .align(Alignment.Center)
                     .graphicsLayer { alpha = 1f - sheetProgress },
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
@@ -294,25 +314,38 @@ internal fun DayImageSection(
                     fontWeight = FontWeight.Bold,
                     color = Color.White
                 )
-                val currentPhotoTime = entry.photos.getOrNull(pagerState.currentPage)?.time
-                if (currentPhotoTime != null) {
-                    Text(
-                        text = currentPhotoTime,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color.White.copy(alpha = 0.75f)
-                    )
+                if (!isGridView) {
+                    val currentPhotoTime = entry.photos.getOrNull(pagerState.currentPage)?.time
+                    if (currentPhotoTime != null) {
+                        Text(
+                            text = currentPhotoTime,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color.White.copy(alpha = 0.75f)
+                        )
+                    }
                 }
             }
 
-            IconButton(
-                onClick = { Toast.makeText(context, "Favorito (próximamente)", Toast.LENGTH_SHORT).show() }
-            ) {
-                Icon(Icons.Outlined.FavoriteBorder, "Favorito", tint = Color.White)
+            Row(modifier = Modifier.align(Alignment.CenterEnd)) {
+                IconButton(onClick = { isGridView = !isGridView }) {
+                    Icon(
+                        imageVector = Icons.Outlined.GridView,
+                        contentDescription = if (isGridView) "Ver como carrusel" else "Ver como cuadrícula",
+                        tint = if (isGridView) Color.White else Color.White.copy(alpha = 0.6f)
+                    )
+                }
+                if (!isGridView) {
+                    IconButton(
+                        onClick = { Toast.makeText(context, "Favorito (próximamente)", Toast.LENGTH_SHORT).show() }
+                    ) {
+                        Icon(Icons.Outlined.FavoriteBorder, "Favorito", tint = Color.White)
+                    }
+                }
             }
         }
 
-        // Page indicator — overlaid on image, above action row
-        if (entry.imageUrls.size > 1) {
+        // Page indicator — only in pager mode, when there are multiple images
+        if (entry.imageUrls.size > 1 && !isGridView) {
             Text(
                 text = "${pagerState.currentPage + 1} / ${entry.imageUrls.size}",
                 color = Color.White,
@@ -415,33 +448,65 @@ internal fun DayImageSection(
                 }
             }
 
-            Row(modifier = Modifier.fillMaxWidth()) {
-                BottomAction(Icons.Default.Share, "Share", modifier = Modifier.weight(1f)) {
-                    Toast.makeText(context, "Compartir (próximamente)", Toast.LENGTH_SHORT).show()
-                }
-                BottomAction(Icons.Default.SaveAlt, "Save", modifier = Modifier.weight(1f)) {
-                    val url = entry.imageUrls.getOrNull(pagerState.currentPage) ?: return@BottomAction
-                    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
-                        pendingSaveUrl = url
-                        savePermissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                    } else {
-                        onSaveToGallery(url)
+            // Photo-specific actions — hidden in grid mode (no current photo selected)
+            if (!isGridView) {
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    BottomAction(Icons.Default.Share, "Share", modifier = Modifier.weight(1f)) {
+                        Toast.makeText(context, "Compartir (próximamente)", Toast.LENGTH_SHORT).show()
                     }
-                }
-                BottomAction(Icons.Default.DeleteOutline, "Remove", modifier = Modifier.weight(1f)) {
-                    if (!isDeleting) entry.imageUrls.getOrNull(pagerState.currentPage)?.let { url ->
-                        pendingDeleteUrl = url
-                        showDeletePhotoDialog = true
+                    BottomAction(Icons.Default.SaveAlt, "Save", modifier = Modifier.weight(1f)) {
+                        val url = entry.imageUrls.getOrNull(pagerState.currentPage) ?: return@BottomAction
+                        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+                            pendingSaveUrl = url
+                            savePermissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                        } else {
+                            onSaveToGallery(url)
+                        }
                     }
+                    BottomAction(Icons.Default.DeleteOutline, "Remove", modifier = Modifier.weight(1f)) {
+                        if (!isDeleting) entry.imageUrls.getOrNull(pagerState.currentPage)?.let { url ->
+                            pendingDeleteUrl = url
+                            showDeletePhotoDialog = true
+                        }
+                    }
+                    BottomAction(
+                        icon = Icons.Default.DeleteForever,
+                        label = "Remove all",
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.weight(1f),
+                        onClick = { if (!isDeleting) showDeleteDayDialog = true }
+                    )
                 }
-                BottomAction(
-                    icon = Icons.Default.DeleteForever,
-                    label = "Remove all",
-                    tint = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.weight(1f),
-                    onClick = { if (!isDeleting) showDeleteDayDialog = true }
-                )
             }
+        }
+    }
+}
+
+@Composable
+private fun PhotoGrid(
+    imageUrls: List<String>,
+    onPhotoClick: (Int) -> Unit
+) {
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(3),
+        modifier = Modifier
+            .fillMaxSize()
+            .statusBarsPadding()
+            .navigationBarsPadding()
+            .padding(top = 56.dp),   // clear the top bar
+        contentPadding = PaddingValues(bottom = 100.dp), // clear the FAB
+        horizontalArrangement = Arrangement.spacedBy(2.dp),
+        verticalArrangement = Arrangement.spacedBy(2.dp)
+    ) {
+        itemsIndexed(imageUrls) { index, url ->
+            AsyncImage(
+                model = url,
+                contentDescription = null,
+                modifier = Modifier
+                    .aspectRatio(1f)
+                    .clickable { onPhotoClick(index) },
+                contentScale = ContentScale.Crop
+            )
         }
     }
 }

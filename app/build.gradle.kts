@@ -50,6 +50,10 @@ android {
     }
 
     buildTypes {
+        debug {
+            applicationIdSuffix = ".debug"
+            resValue("string", "app_name", "PicADay Debug")
+        }
         release {
             isMinifyEnabled = true
             signingConfig = signingConfigs.getByName("release")

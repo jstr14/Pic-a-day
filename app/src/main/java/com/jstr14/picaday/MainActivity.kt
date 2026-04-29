@@ -44,16 +44,18 @@ class MainActivity : ComponentActivity() {
     private val googleSignInLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
-        if (result.resultCode == RESULT_OK) {
-            val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
-            try {
-                val account = task.getResult(ApiException::class.java)
-                val idToken = account?.idToken
-                if (idToken != null) {
-                    authViewModel.signInWithGoogle(idToken)
-                }
-            } catch (e: ApiException) {
+        val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+        try {
+            val account = task.getResult(ApiException::class.java)
+            val idToken = account?.idToken
+            if (idToken != null) {
+                authViewModel.signInWithGoogle(idToken)
+            } else {
+                authViewModel.onGoogleSignInFailed()
             }
+        } catch (e: ApiException) {
+            val userCancelled = e.statusCode == 12501 // SIGN_IN_CANCELLED
+            if (!userCancelled) authViewModel.onGoogleSignInFailed()
         }
     }
 
