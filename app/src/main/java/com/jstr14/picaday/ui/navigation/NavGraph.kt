@@ -6,6 +6,8 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import com.jstr14.picaday.ui.albums.AlbumDetailScreen
+import com.jstr14.picaday.ui.albums.AlbumsScreen
 import com.jstr14.picaday.ui.auth.AuthViewModel
 import com.jstr14.picaday.ui.daydetail.DayDetailScreen
 import com.jstr14.picaday.ui.screens.HomeScreen
@@ -42,6 +44,22 @@ fun NavGraph(
         ) { backStackEntry ->
             val date = backStackEntry.arguments?.getString("dayId") ?: ""
             DayDetailScreen(date = date, onBack = { navController.popBackStack() })
+        }
+
+        composable(Screen.Albums.route) {
+            AlbumsScreen(
+                onBack = { navController.popBackStack() },
+                onAlbumClick = { albumId ->
+                    navController.navigate(Screen.AlbumDetail.createRoute(albumId))
+                }
+            )
+        }
+
+        composable(
+            route = Screen.AlbumDetail.route,
+            arguments = listOf(navArgument("albumId") { type = NavType.StringType })
+        ) {
+            AlbumDetailScreen(onBack = { navController.popBackStack() })
         }
     }
 }

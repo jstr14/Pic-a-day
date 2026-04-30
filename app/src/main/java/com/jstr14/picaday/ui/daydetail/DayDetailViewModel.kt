@@ -13,15 +13,25 @@ import androidx.lifecycle.viewModelScope
 import coil.ImageLoader
 import coil.request.ImageRequest
 import com.jstr14.picaday.data.repository.FirebaseStorageRepository
-import com.jstr14.picaday.domain.model.DayEntry
 import com.jstr14.picaday.data.repository.ImageRepository
+import com.jstr14.picaday.domain.model.Album
+import com.jstr14.picaday.domain.model.DayEntry
+import com.jstr14.picaday.domain.model.Photo
+import com.jstr14.picaday.domain.repository.AlbumRepository
+import com.jstr14.picaday.domain.usecase.GetMergedEntriesUseCase
 import com.jstr14.picaday.domain.usecase.ProcessImageUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
@@ -32,6 +42,8 @@ import javax.inject.Inject
 class DayDetailViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val imageRepository: ImageRepository,
+    private val albumRepository: AlbumRepository,
+    private val getMergedEntries: GetMergedEntriesUseCase,
     private val storageRepository: FirebaseStorageRepository,
     private val processImageUseCase: ProcessImageUseCase,
 ) : ViewModel() {
@@ -40,6 +52,9 @@ class DayDetailViewModel @Inject constructor(
 
     private val _saveToGalleryResult = MutableStateFlow<SaveResult?>(null)
     val saveToGalleryResult: StateFlow<SaveResult?> = _saveToGalleryResult.asStateFlow()
+
+    private val _addToAlbumResult = MutableSharedFlow<Boolean>(extraBufferCapacity = 1)
+    val addToAlbumResult: SharedFlow<Boolean> = _addToAlbumResult.asSharedFlow()
 
     private val _state = MutableStateFlow<DayEntry?>(null)
     val state: StateFlow<DayEntry?> = _state.asStateFlow()
@@ -51,6 +66,10 @@ class DayDetailViewModel @Inject constructor(
     private val _isDeleting = MutableStateFlow(false)
     val isDeleting: StateFlow<Boolean> = _isDeleting.asStateFlow()
 
+    val albums: StateFlow<List<Album>> = albumRepository.getAlbumsForUser()
+        .catch { e -> e.printStackTrace() }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
     private var activeUploads = 0
 
     fun loadData(dateString: String) {
@@ -59,14 +78,19 @@ class DayDetailViewModel @Inject constructor(
 
         viewModelScope.launch {
             _isLoading.value = true
-            imageRepository.getEntriesForMonth(month).collect { entries ->
-                _state.value = entries.find { it.date == date }
-                _isLoading.value = false
-            }
+            getMergedEntries.forMonth(month)
+                .catch { e -> e.printStackTrace() }
+                .collect { entries ->
+                    _state.value = entries.find { it.date == date }
+                    _isLoading.value = false
+                }
         }
     }
 
-    fun addMultiplePhotosToSpecificDay(date: LocalDate, uris: List<Uri>) {
+    /**
+     * [albumId] null → personal diary; non-null → upload to that shared album (uses EXIF date).
+     */
+    fun addMultiplePhotosToSpecificDay(date: LocalDate, uris: List<Uri>, albumId: String? = null) {
         viewModelScope.launch {
             activeUploads += uris.size
             _isUploading.value = true
@@ -78,7 +102,15 @@ class DayDetailViewModel @Inject constructor(
                             storageRepository.uploadPhoto(processed.bytes)
                         }
                         if (url != null) {
-                            imageRepository.addPhotoToDate(date, url, processed.time, processed.lat, processed.lon)
+                            if (albumId == null) {
+                                imageRepository.addPhotoToDate(
+                                    date, url, processed.time, processed.lat, processed.lon
+                                )
+                            } else {
+                                albumRepository.addPhotoToAlbumEntry(
+                                    albumId, processed.date, url, processed.time, processed.lat, processed.lon
+                                )
+                            }
                         }
                     } catch (e: Exception) {
                         e.printStackTrace()
@@ -87,8 +119,6 @@ class DayDetailViewModel @Inject constructor(
                         if (activeUploads <= 0) {
                             activeUploads = 0
                             _isUploading.value = false
-                            // If we uploaded from the empty state the cache-backed flow already
-                            // completed — reload so a live Firestore listener is established.
                             if (_state.value == null) loadData(date.toString())
                         }
                     }
@@ -181,6 +211,25 @@ class DayDetailViewModel @Inject constructor(
 
     fun clearSaveResult() {
         _saveToGalleryResult.value = null
+    }
+
+    fun addExistingPhotoToAlbum(albumId: String, photo: Photo, date: LocalDate) {
+        viewModelScope.launch {
+            try {
+                albumRepository.addPhotoToAlbumEntry(
+                    albumId = albumId,
+                    date = date,
+                    imageUrl = photo.url,
+                    time = photo.time,
+                    lat = photo.lat,
+                    lon = photo.lon,
+                )
+                _addToAlbumResult.tryEmit(true)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                _addToAlbumResult.tryEmit(false)
+            }
+        }
     }
 }
 

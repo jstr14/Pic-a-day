@@ -8,8 +8,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.AnchoredDraggableState
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.anchoredDraggable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -32,11 +35,13 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.PhotoAlbum
 import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -66,7 +71,7 @@ import com.jstr14.picaday.domain.model.DayEntry
 import java.time.LocalDate
 import kotlin.math.roundToInt
 
-@OptIn(ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalLayoutApi::class)
 @Composable
 internal fun DayDetailSheet(
     entry: DayEntry,
@@ -158,6 +163,9 @@ internal fun DayDetailSheet(
                 fontWeight = FontWeight.Bold
             )
 
+            val currentPhoto = entry.photos.getOrNull(currentPhotoIndex)
+            val albumNames = currentPhoto?.albumNames.orEmpty()
+
             Spacer(Modifier.height(12.dp))
             HorizontalDivider(color = Color.White.copy(alpha = 0.12f))
             Spacer(Modifier.height(12.dp))
@@ -216,12 +224,50 @@ internal fun DayDetailSheet(
                 }
             }
 
+            if (albumNames.isNotEmpty()) {
+                Spacer(Modifier.height(16.dp))
+                HorizontalDivider(color = Color.White.copy(alpha = 0.12f))
+                Spacer(Modifier.height(16.dp))
+
+                Text(
+                    text = "Álbumes",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = Color.White.copy(alpha = 0.5f),
+                )
+                Spacer(Modifier.height(10.dp))
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    albumNames.forEach { name ->
+                        Surface(
+                            shape = RoundedCornerShape(50),
+                            color = Color(0xFF2C2C2E),
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.PhotoAlbum,
+                                    contentDescription = null,
+                                    tint = Color.White.copy(alpha = 0.7f),
+                                    modifier = Modifier.size(14.dp),
+                                )
+                                Spacer(Modifier.width(6.dp))
+                                Text(
+                                    text = name,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = Color.White.copy(alpha = 0.9f),
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
             Spacer(Modifier.height(16.dp))
             HorizontalDivider(color = Color.White.copy(alpha = 0.12f))
             Spacer(Modifier.height(16.dp))
 
             // Location card — shows location of the currently visible photo
-            val currentPhoto = entry.photos.getOrNull(currentPhotoIndex)
             val lat = currentPhoto?.lat
             val lon = currentPhoto?.lon
             Box(

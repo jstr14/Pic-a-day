@@ -172,6 +172,13 @@ class FirebaseImageRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getEntry(date: LocalDate): DayEntry? {
+        val uid = userId ?: return null
+        val snapshot = firestore.collection("users").document(uid)
+            .collection("entries").document(date.toString()).get().await()
+        return snapshot.toObject(DayEntryDto::class.java)?.toDomain()
+    }
+
     override suspend fun addPhotoToDate(date: LocalDate, imageUrl: String, time: String?, lat: Double?, lon: Double?) {
         val uid = userId ?: return
         val dateStr = date.toString()

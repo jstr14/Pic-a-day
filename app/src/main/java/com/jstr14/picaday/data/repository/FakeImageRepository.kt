@@ -65,4 +65,6 @@ class FakeImageRepository @Inject constructor() : ImageRepository {
     override suspend fun updateDescription(date: LocalDate, description: String) {
         Unit
     }
+
+    override suspend fun getEntry(date: LocalDate): DayEntry? = null
 }

@@ -1,6 +1,7 @@
 package com.jstr14.picaday.di
 
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import com.jstr14.picaday.data.repository.AuthRepositoryImpl
 import com.jstr14.picaday.domain.repository.AuthRepository
 import dagger.Module
@@ -15,7 +16,7 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideAuthRepository(auth: FirebaseAuth): AuthRepository {
-        return AuthRepositoryImpl(auth)
+    fun provideAuthRepository(auth: FirebaseAuth, firestore: FirebaseFirestore): AuthRepository {
+        return AuthRepositoryImpl(auth, firestore)
     }
 }

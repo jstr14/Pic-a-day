@@ -4,17 +4,23 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.jstr14.picaday.data.repository.FirebaseStorageRepository
-import com.jstr14.picaday.domain.model.DayEntry
 import com.jstr14.picaday.data.repository.ImageRepository
+import com.jstr14.picaday.domain.model.Album
+import com.jstr14.picaday.domain.model.DayEntry
+import com.jstr14.picaday.domain.repository.AlbumRepository
+import com.jstr14.picaday.domain.usecase.GetMergedEntriesUseCase
 import com.jstr14.picaday.domain.usecase.ProcessImageUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
@@ -24,6 +30,8 @@ import javax.inject.Inject
 @HiltViewModel
 class CalendarViewModel @Inject constructor(
     private val imageRepository: ImageRepository,
+    private val albumRepository: AlbumRepository,
+    private val getMergedEntries: GetMergedEntriesUseCase,
     private val storageRepository: FirebaseStorageRepository,
     private val processImageUseCase: ProcessImageUseCase,
 ) : ViewModel() {
@@ -36,6 +44,10 @@ class CalendarViewModel @Inject constructor(
 
     private val _visibleMonth = MutableStateFlow(YearMonth.now())
     val visibleMonth: StateFlow<YearMonth> = _visibleMonth.asStateFlow()
+
+    val albums: StateFlow<List<Album>> = albumRepository.getAlbumsForUser()
+        .catch { e -> e.printStackTrace() }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     fun updateVisibleMonth(month: YearMonth) {
         _visibleMonth.value = month
@@ -52,48 +64,53 @@ class CalendarViewModel @Inject constructor(
     }
 
     private var activeUploads = 0
-    /**
-     * Loads images for the given month.
-     */
+
     fun loadMonthData(month: YearMonth) {
         viewModelScope.launch {
-            imageRepository.getEntriesForMonth(month).collect { loadedEntries ->
-                _entries.value = loadedEntries
-            }
+            getMergedEntries.forMonth(month)
+                .catch { e -> e.printStackTrace() }
+                .collect { loadedEntries ->
+                    _entries.value = loadedEntries
+                }
         }
     }
 
     fun loadYearData(year: Int) {
         viewModelScope.launch {
-            imageRepository.getEntriesForYear(year).collect { loadedEntries ->
-                _yearEntryDates.value = loadedEntries.map { it.date }.toSet()
-            }
+            getMergedEntries.forYear(year)
+                .catch { e -> e.printStackTrace() }
+                .collect { loadedEntries ->
+                    _yearEntryDates.value = loadedEntries.map { it.date }.toSet()
+                }
         }
     }
 
-    fun uploadMultipleImages(uris: List<Uri>) {
+    /**
+     * [albumId] null → personal diary; non-null → upload to that shared album.
+     */
+    fun uploadMultipleImages(uris: List<Uri>, albumId: String? = null) {
         activeUploads += uris.size
         _isUploading.value = true
         uris.forEach { uri ->
-            // Usamos viewModelScope para que si se cierra la pantalla,
-            // las subidas en curso tengan oportunidad de terminar (o cancelarse adecuadamente)
             viewModelScope.launch {
                 try {
-                    // 1. Procesamiento (Compresión + EXIF) delegado al Use Case
-                    // El Use Case ya corre en Dispatchers.IO internamente
                     val processed = processImageUseCase(uri) ?: return@launch
-
-                    // 2. Subida a Storage (corriendo en segundo plano)
                     val url = withContext(Dispatchers.IO) {
                         storageRepository.uploadPhoto(processed.bytes)
                     }
-
                     if (url != null) {
-                        imageRepository.addPhotoToDate(processed.date, url, processed.time, processed.lat, processed.lon)
+                        if (albumId == null) {
+                            imageRepository.addPhotoToDate(
+                                processed.date, url, processed.time, processed.lat, processed.lon
+                            )
+                        } else {
+                            albumRepository.addPhotoToAlbumEntry(
+                                albumId, processed.date, url, processed.time, processed.lat, processed.lon
+                            )
+                        }
                     }
                 } catch (e: Exception) {
                     e.printStackTrace()
-                    // Aquí podrías manejar un estado de error para la UI si fuera necesario
                 } finally {
                     activeUploads--
                     if (activeUploads <= 0) {

@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.jstr14.picaday.ui.calendar.components.CalendarDayCell
+import com.jstr14.picaday.ui.components.AlbumSelectorSheet
 import com.jstr14.picaday.ui.calendar.components.CalendarHeader
 import com.jstr14.picaday.ui.calendar.components.DaysOfWeekTitle
 import com.jstr14.picaday.ui.calendar.components.YearOverviewCalendar
@@ -61,8 +62,11 @@ fun CalendarScreen(
     val visibleMonth = remember(state.firstVisibleMonth) { state.firstVisibleMonth.yearMonth }
     val isUploading by viewModel.isUploading.collectAsState()
     val yearEntryDates by viewModel.yearEntryDates.collectAsState()
+    val albums by viewModel.albums.collectAsState()
     var isYearMode by remember { mutableStateOf(false) }
     var yearModeYear by remember { mutableStateOf(currentMonth.year) }
+    var showAlbumSelector by remember { mutableStateOf(false) }
+    var selectedAlbumId by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(isYearMode, yearModeYear) {
         if (isYearMode) viewModel.loadYearData(yearModeYear)
@@ -80,7 +84,8 @@ fun CalendarScreen(
     val pickMultipleMedia = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickMultipleVisualMedia(maxItems = 10)
     ) { uris ->
-        if (uris.isNotEmpty()) viewModel.uploadMultipleImages(uris)
+        if (uris.isNotEmpty()) viewModel.uploadMultipleImages(uris, selectedAlbumId)
+        selectedAlbumId = null
     }
 
     val mediaLocationPermissionLauncher = rememberLauncherForActivityResult(
@@ -100,6 +105,26 @@ fun CalendarScreen(
         }
     }
 
+    fun onDestinationSelected(albumId: String?) {
+        selectedAlbumId = albumId
+        showAlbumSelector = false
+        launchPickerWithLocationPermission()
+    }
+
+    fun onUploadClick() {
+        if (albums.isEmpty()) onDestinationSelected(null)
+        else showAlbumSelector = true
+    }
+
+    if (showAlbumSelector) {
+        AlbumSelectorSheet(
+            albums = albums,
+            onSelectPersonal = { onDestinationSelected(null) },
+            onSelectAlbum = { album -> onDestinationSelected(album.id) },
+            onDismiss = { showAlbumSelector = false }
+        )
+    }
+
     LaunchedEffect(visibleMonth) {
         viewModel.loadMonthData(visibleMonth)
         viewModel.updateVisibleMonth(visibleMonth)
@@ -110,7 +135,7 @@ fun CalendarScreen(
         floatingActionButton = {
             if (!isYearMode) {
                 FloatingActionButton(
-                    onClick = { launchPickerWithLocationPermission() },
+                    onClick = { onUploadClick() },
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary
                 ) {
