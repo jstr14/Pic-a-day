@@ -31,7 +31,8 @@ fun HomeScreen(
     calendarViewModel: CalendarViewModel = hiltViewModel()
 ) {
     val visibleMonth by calendarViewModel.visibleMonth.collectAsState()
-    val isCurrentMonth = visibleMonth == YearMonth.now()
+    val isYearMode by calendarViewModel.isYearMode.collectAsState()
+    val isCurrentMonth = visibleMonth == YearMonth.now() && !isYearMode
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,

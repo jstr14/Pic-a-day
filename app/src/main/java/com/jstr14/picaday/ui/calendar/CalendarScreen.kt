@@ -72,6 +72,10 @@ fun CalendarScreen(
         if (isYearMode) viewModel.loadYearData(yearModeYear)
     }
 
+    LaunchedEffect(isYearMode) {
+        viewModel.setYearMode(isYearMode)
+    }
+
     LaunchedEffect(Unit) {
         viewModel.scrollToToday.collect {
             isYearMode = false

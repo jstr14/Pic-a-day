@@ -45,6 +45,13 @@ class CalendarViewModel @Inject constructor(
     private val _visibleMonth = MutableStateFlow(YearMonth.now())
     val visibleMonth: StateFlow<YearMonth> = _visibleMonth.asStateFlow()
 
+    private val _isYearMode = MutableStateFlow(false)
+    val isYearMode: StateFlow<Boolean> = _isYearMode.asStateFlow()
+
+    fun setYearMode(enabled: Boolean) {
+        _isYearMode.value = enabled
+    }
+
     val albums: StateFlow<List<Album>> = albumRepository.getAlbumsForUser()
         .catch { e -> e.printStackTrace() }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
