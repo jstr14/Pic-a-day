@@ -5,6 +5,7 @@ data class Album(
     val name: String,
     val ownerId: String,
     val members: List<AlbumMember>,
+    val pendingInvites: List<String> = emptyList(),
 )
 
 data class AlbumMember(

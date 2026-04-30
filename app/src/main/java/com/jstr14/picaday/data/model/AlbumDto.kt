@@ -15,6 +15,7 @@ data class AlbumDto(
     val memberEmails: Map<String, String> = emptyMap(),
     val memberDisplayNames: Map<String, String> = emptyMap(),
     val memberPhotoUrls: Map<String, String> = emptyMap(),
+    val pendingInvites: List<String> = emptyList(),
 )
 
 fun AlbumDto.toDomain() = Album(
@@ -34,4 +35,5 @@ fun AlbumDto.toDomain() = Album(
             photoUrl = memberPhotoUrls[userId],
         )
     },
+    pendingInvites = pendingInvites,
 )

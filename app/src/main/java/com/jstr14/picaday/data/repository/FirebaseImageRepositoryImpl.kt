@@ -26,18 +26,28 @@ class FirebaseImageRepositoryImpl @Inject constructor(
 ) : ImageRepository, SessionClearable {
 
     private val cache = CalendarCache()
+    private var cacheOwnerUid: String? = null
 
     override fun clearSession() {
         cache.clear()
+        cacheOwnerUid = null
     }
 
     // current userId
     private val userId: String?
         get() = auth.currentUser?.uid
 
+    private fun ensureCacheForUser(uid: String) {
+        if (cacheOwnerUid != uid) {
+            cache.clear()
+            cacheOwnerUid = uid
+        }
+    }
+
     override fun getEntriesForMonth(month: YearMonth): Flow<List<DayEntry>> {
         val currentUid = userId ?: return flowOf(emptyList())
 
+        ensureCacheForUser(currentUid)
         cache.get(month)?.let { return flowOf(it) }
 
         val monthQueryString = "${month.year}-${month.monthValue.toString().padStart(2, '0')}"
@@ -66,6 +76,7 @@ class FirebaseImageRepositoryImpl @Inject constructor(
     override fun getEntriesForYear(year: Int): Flow<List<DayEntry>> {
         val currentUid = userId ?: return flowOf(emptyList())
 
+        ensureCacheForUser(currentUid)
         if (cache.allMonthsCached(year)) return flowOf(cache.getYear(year))
 
         val yearStart = "$year-01"

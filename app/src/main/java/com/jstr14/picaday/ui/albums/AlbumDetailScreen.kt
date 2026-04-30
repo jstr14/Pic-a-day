@@ -525,13 +525,29 @@ private fun MembersTab(
             )
         }
 
-        val members = album?.members ?: emptyList()
+        val members = (album?.members ?: emptyList())
+            .sortedBy { when (it.role) { AlbumRole.OWNER -> 0; AlbumRole.ADMIN -> 1; AlbumRole.MEMBER -> 2 } }
         items(members, key = { it.userId }) { member ->
             MemberRow(
                 member = member,
                 canRemove = canManageMembers && member.role != AlbumRole.OWNER,
                 onRemove = { onRemoveMember(member.userId) }
             )
+        }
+
+        val pendingInvites = album?.pendingInvites ?: emptyList()
+        if (pendingInvites.isNotEmpty()) {
+            item {
+                Text(
+                    "Invitaciones pendientes",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(top = 16.dp, bottom = 4.dp)
+                )
+            }
+            items(pendingInvites, key = { "pending_$it" }) { email ->
+                PendingInviteRow(email = email)
+            }
         }
     }
 }
@@ -609,6 +625,55 @@ private fun MemberRow(
                         modifier = Modifier.size(20.dp)
                     )
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PendingInviteRow(email: String) {
+    val cardColor = lerp(Color.White, MaterialTheme.colorScheme.tertiary, 0.12f)
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(10.dp),
+        colors = CardDefaults.cardColors(containerColor = cardColor),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f), CircleShape),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Person,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+                    modifier = Modifier.size(22.dp)
+                )
+            }
+            Spacer(Modifier.width(12.dp))
+            Text(
+                email,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                modifier = Modifier.weight(1f),
+            )
+            Surface(
+                color = MaterialTheme.colorScheme.tertiaryContainer,
+                shape = RoundedCornerShape(50),
+            ) {
+                Text(
+                    "pendiente",
+                    style = MaterialTheme.typography.labelSmall,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                    color = MaterialTheme.colorScheme.onTertiaryContainer,
+                )
             }
         }
     }
