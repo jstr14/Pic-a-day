@@ -7,7 +7,9 @@ data class PhotoDto(
     val time: String? = null,
     val lat: Double? = null,
     val lon: Double? = null,
+    val uploadedBy: String? = null,
+    val uploadedByName: String? = null,
 )
 
-fun PhotoDto.toDomain() = Photo(url = url, time = time, lat = lat, lon = lon)
+fun PhotoDto.toDomain() = Photo(url = url, time = time, lat = lat, lon = lon, uploadedByUid = uploadedBy, contributorName = uploadedByName)
 fun Photo.toDto() = PhotoDto(url = url, time = time, lat = lat, lon = lon)

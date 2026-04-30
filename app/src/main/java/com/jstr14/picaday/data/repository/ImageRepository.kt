@@ -30,5 +30,7 @@ interface ImageRepository {
 
     suspend fun addPhotoToDate(date: LocalDate, imageUrl: String, time: String? = null, lat: Double? = null, lon: Double? = null)
 
+    suspend fun getEntry(date: LocalDate): DayEntry?
+
     suspend fun updateDescription(date: LocalDate, description: String)
 }

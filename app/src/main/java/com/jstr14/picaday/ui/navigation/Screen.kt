@@ -6,4 +6,8 @@ sealed class Screen(val route: String) {
     object DayDetail : Screen("day_detail_screen/{dayId}") {
         fun createRoute(date: String) = "day_detail_screen/$date"
     }
+    object Albums : Screen("albums_screen")
+    object AlbumDetail : Screen("album_detail_screen/{albumId}") {
+        fun createRoute(albumId: String) = "album_detail_screen/$albumId"
+    }
 }

@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.filled.PhotoAlbum
 import androidx.compose.material3.*
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -20,6 +21,7 @@ import androidx.navigation.NavHostController
 import com.jstr14.picaday.ui.auth.AuthViewModel
 import com.jstr14.picaday.ui.calendar.CalendarScreen
 import com.jstr14.picaday.ui.calendar.CalendarViewModel
+import com.jstr14.picaday.ui.navigation.Screen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -29,7 +31,8 @@ fun HomeScreen(
     calendarViewModel: CalendarViewModel = hiltViewModel()
 ) {
     val visibleMonth by calendarViewModel.visibleMonth.collectAsState()
-    val isCurrentMonth = visibleMonth == YearMonth.now()
+    val isYearMode by calendarViewModel.isYearMode.collectAsState()
+    val isCurrentMonth = visibleMonth == YearMonth.now() && !isYearMode
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -56,6 +59,12 @@ fun HomeScreen(
                             style = MaterialTheme.typography.labelLarge,
                             color = if (isCurrentMonth) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
                                     else MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                    IconButton(onClick = { navController.navigate(Screen.Albums.route) }) {
+                        Icon(
+                            imageVector = Icons.Default.PhotoAlbum,
+                            contentDescription = "Álbumes compartidos"
                         )
                     }
                     IconButton(onClick = { authViewModel.signOut() }) {

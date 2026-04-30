@@ -1,12 +1,9 @@
 package com.jstr14.picaday.ui.daydetail
 
 import android.Manifest
-import android.content.pm.PackageManager
 import android.os.Build
-import androidx.core.content.ContextCompat
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -49,6 +46,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AddPhotoAlternate
 import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.DeleteOutline
+import androidx.compose.material.icons.filled.PhotoAlbum
 import androidx.compose.material.icons.filled.SaveAlt
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.outlined.FavoriteBorder
@@ -84,7 +82,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.jstr14.picaday.domain.model.Album
 import com.jstr14.picaday.domain.model.DayEntry
+import com.jstr14.picaday.domain.model.Photo
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 
@@ -106,7 +106,9 @@ internal fun DayImageSection(
     onSaveToGallery: (String) -> Unit,
     onDeletePhoto: (LocalDate, String) -> Unit,
     onDeleteAll: () -> Unit,
-    onAddPhotos: (LocalDate, List<android.net.Uri>) -> Unit,
+    onAddPhotosClick: () -> Unit,
+    albums: List<Album> = emptyList(),
+    onAddToAlbum: (Photo) -> Unit = {},
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -121,30 +123,6 @@ internal fun DayImageSection(
     ) { granted ->
         if (granted) pendingSaveUrl?.let { onSaveToGallery(it) }
         pendingSaveUrl = null
-    }
-
-    val pickMultipleMedia = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.PickMultipleVisualMedia(maxItems = 10)
-    ) { uris ->
-        if (uris.isNotEmpty()) onAddPhotos(LocalDate.parse(date), uris)
-    }
-
-    val mediaLocationPermissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) {
-        // Whether granted or denied, open the picker — GPS will work if granted
-        pickMultipleMedia.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-    }
-
-    fun launchPickerWithLocationPermission() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
-            ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_MEDIA_LOCATION)
-                != PackageManager.PERMISSION_GRANTED
-        ) {
-            mediaLocationPermissionLauncher.launch(Manifest.permission.ACCESS_MEDIA_LOCATION)
-        } else {
-            pickMultipleMedia.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-        }
     }
 
     if (showDeletePhotoDialog) {
@@ -214,7 +192,7 @@ internal fun DayImageSection(
         if (entry.imageUrls.isNotEmpty()) {
             if (isGridView) {
                 PhotoGrid(
-                    imageUrls = entry.imageUrls,
+                    photos = entry.photos,
                     onPhotoClick = { index ->
                         isGridView = false
                         coroutineScope.launch { pagerState.scrollToPage(index) }
@@ -315,10 +293,10 @@ internal fun DayImageSection(
                     color = Color.White
                 )
                 if (!isGridView) {
-                    val currentPhotoTime = entry.photos.getOrNull(pagerState.currentPage)?.time
-                    if (currentPhotoTime != null) {
+                    val currentPhoto = entry.photos.getOrNull(pagerState.currentPage)
+                    if (currentPhoto?.time != null) {
                         Text(
-                            text = currentPhotoTime,
+                            text = currentPhoto.time,
                             style = MaterialTheme.typography.bodyMedium,
                             color = Color.White.copy(alpha = 0.75f)
                         )
@@ -440,7 +418,7 @@ internal fun DayImageSection(
                 horizontalArrangement = Arrangement.End
             ) {
                 FloatingActionButton(
-                    onClick = { launchPickerWithLocationPermission() },
+                    onClick = { onAddPhotosClick() },
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     contentColor = MaterialTheme.colorScheme.onPrimaryContainer
                 ) {
@@ -461,6 +439,11 @@ internal fun DayImageSection(
                             savePermissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
                         } else {
                             onSaveToGallery(url)
+                        }
+                    }
+                    if (albums.isNotEmpty()) {
+                        BottomAction(Icons.Default.PhotoAlbum, "Álbum", modifier = Modifier.weight(1f)) {
+                            entry.photos.getOrNull(pagerState.currentPage)?.let { onAddToAlbum(it) }
                         }
                     }
                     BottomAction(Icons.Default.DeleteOutline, "Remove", modifier = Modifier.weight(1f)) {
@@ -484,7 +467,7 @@ internal fun DayImageSection(
 
 @Composable
 private fun PhotoGrid(
-    imageUrls: List<String>,
+    photos: List<Photo>,
     onPhotoClick: (Int) -> Unit
 ) {
     LazyVerticalGrid(
@@ -498,15 +481,35 @@ private fun PhotoGrid(
         horizontalArrangement = Arrangement.spacedBy(2.dp),
         verticalArrangement = Arrangement.spacedBy(2.dp)
     ) {
-        itemsIndexed(imageUrls) { index, url ->
-            AsyncImage(
-                model = url,
-                contentDescription = null,
+        itemsIndexed(photos) { index, photo ->
+            Box(
                 modifier = Modifier
                     .aspectRatio(1f)
-                    .clickable { onPhotoClick(index) },
-                contentScale = ContentScale.Crop
-            )
+                    .clickable { onPhotoClick(index) }
+            ) {
+                AsyncImage(
+                    model = photo.url,
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+                if (photo.albumNames.isNotEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomStart)
+                            .padding(4.dp)
+                            .background(Color.Black.copy(alpha = 0.52f), RoundedCornerShape(4.dp))
+                            .padding(4.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.PhotoAlbum,
+                            contentDescription = "En álbum",
+                            tint = Color.White,
+                            modifier = Modifier.size(14.dp)
+                        )
+                    }
+                }
+            }
         }
     }
 }

@@ -57,6 +57,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.jstr14.picaday.ui.components.AlbumSelectorSheet
 import com.jstr14.picaday.ui.theme.logo.PicADayLogo
 import java.time.LocalDate
 
@@ -72,6 +73,7 @@ fun DayDetailScreen(
     val isUploading by viewModel.isUploading.collectAsState()
     val isDeleting by viewModel.isDeleting.collectAsState()
     val saveResult by viewModel.saveToGalleryResult.collectAsState()
+    val albums by viewModel.albums.collectAsState()
 
     val context = LocalContext.current
     val density = LocalDensity.current
@@ -86,11 +88,64 @@ fun DayDetailScreen(
     val hasData = !isLoading && dayEntry != null
     var sheetContentHeightPx by remember { mutableStateOf(0f) }
 
+    // Album selector state — for uploading new photos
+    var showAlbumSelector by remember { mutableStateOf(false) }
+    var selectedAlbumId by remember { mutableStateOf<String?>(null) }
+
+    // Album selector state — for adding an existing photo to an album
+    var showAddToAlbumSelector by remember { mutableStateOf(false) }
+    var pendingPhotoForAlbum by remember { mutableStateOf<com.jstr14.picaday.domain.model.Photo?>(null) }
+
+    // Unified picker — both empty-state and add-more go through here
+    val pickMedia = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickMultipleVisualMedia(maxItems = 10)
+    ) { uris ->
+        if (uris.isNotEmpty()) {
+            viewModel.addMultiplePhotosToSpecificDay(LocalDate.parse(date), uris, selectedAlbumId)
+        }
+        selectedAlbumId = null
+    }
+
+    val locationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) {
+        pickMedia.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+    }
+
+    fun launchPickerWithLocationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_MEDIA_LOCATION)
+                != PackageManager.PERMISSION_GRANTED
+        ) {
+            locationPermissionLauncher.launch(Manifest.permission.ACCESS_MEDIA_LOCATION)
+        } else {
+            pickMedia.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+        }
+    }
+
+    fun onDestinationSelected(albumId: String?) {
+        selectedAlbumId = albumId
+        showAlbumSelector = false
+        launchPickerWithLocationPermission()
+    }
+
+    fun onAddPhotosClick() {
+        if (albums.isEmpty()) onDestinationSelected(null)
+        else showAlbumSelector = true
+    }
+
     LaunchedEffect(saveResult) {
         saveResult ?: return@LaunchedEffect
         val message = if (saveResult is SaveResult.Success) "Guardado en galería" else "Error al guardar"
         Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
         viewModel.clearSaveResult()
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.addToAlbumResult.collect { success ->
+            val message = if (success) "Foto añadida al álbum" else "Error al añadir al álbum"
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+        }
     }
 
     LaunchedEffect(isEditingDescription) {
@@ -103,27 +158,29 @@ fun DayDetailScreen(
 
     LaunchedEffect(date) { viewModel.loadData(date) }
 
-    val pickMediaForEmptyState = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.PickMultipleVisualMedia(maxItems = 10)
-    ) { uris ->
-        if (uris.isNotEmpty()) viewModel.addMultiplePhotosToSpecificDay(LocalDate.parse(date), uris)
+    if (showAlbumSelector) {
+        AlbumSelectorSheet(
+            albums = albums,
+            onSelectPersonal = { onDestinationSelected(null) },
+            onSelectAlbum = { album -> onDestinationSelected(album.id) },
+            onDismiss = { showAlbumSelector = false }
+        )
     }
 
-    val mediaLocationPermissionForEmptyState = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) {
-        pickMediaForEmptyState.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-    }
-
-    fun launchEmptyStatePickerWithLocationPermission() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
-            ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_MEDIA_LOCATION)
-                != PackageManager.PERMISSION_GRANTED
-        ) {
-            mediaLocationPermissionForEmptyState.launch(Manifest.permission.ACCESS_MEDIA_LOCATION)
-        } else {
-            pickMediaForEmptyState.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-        }
+    if (showAddToAlbumSelector) {
+        AlbumSelectorSheet(
+            albums = albums,
+            showPersonalOption = false,
+            onSelectPersonal = {},
+            onSelectAlbum = { album ->
+                pendingPhotoForAlbum?.let { photo ->
+                    viewModel.addExistingPhotoToAlbum(album.id, photo, LocalDate.parse(date))
+                }
+                pendingPhotoForAlbum = null
+                showAddToAlbumSelector = false
+            },
+            onDismiss = { showAddToAlbumSelector = false; pendingPhotoForAlbum = null }
+        )
     }
 
     val sheetState = remember {
@@ -205,7 +262,12 @@ fun DayDetailScreen(
                 onDeletePhoto = { d, url -> viewModel.deletePhoto(d, url) },
                 onBack = onBack,
                 onDeleteAll = { viewModel.deleteFullDay(LocalDate.parse(date)) { onBack() } },
-                onAddPhotos = { d, uris -> viewModel.addMultiplePhotosToSpecificDay(d, uris) }
+                onAddPhotosClick = { onAddPhotosClick() },
+                albums = albums,
+                onAddToAlbum = { photo ->
+                    pendingPhotoForAlbum = photo
+                    showAddToAlbumSelector = true
+                }
             )
             DayDetailSheet(
                 entry = entry,
@@ -225,7 +287,7 @@ fun DayDetailScreen(
             )
         }
 
-        // Back button — only for loading / empty states (data state has its own in DayImageSection)
+        // Back button — only for loading / empty states
         if (dayEntry == null) {
             IconButton(
                 onClick = onBack,
@@ -238,10 +300,10 @@ fun DayDetailScreen(
             }
         }
 
-        // FAB for empty state — hidden while uploading
+        // FAB for empty state
         if (!isLoading && !isUploading && dayEntry == null) {
             FloatingActionButton(
-                onClick = { launchEmptyStatePickerWithLocationPermission() },
+                onClick = { onAddPhotosClick() },
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .navigationBarsPadding()
