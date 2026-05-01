@@ -1,19 +1,24 @@
 package com.jstr14.picaday.ui.albums
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.calculatePan
+import androidx.compose.foundation.gestures.calculateZoom
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,14 +28,20 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -40,16 +51,19 @@ import androidx.compose.material.icons.filled.AddPhotoAlternate
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PersonRemove
 import androidx.compose.material.icons.filled.PhotoAlbum
+import androidx.compose.material.icons.filled.SaveAlt
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -76,15 +90,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChanged
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import com.jstr14.picaday.R
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -92,9 +108,17 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import com.jstr14.picaday.R
 import com.jstr14.picaday.domain.model.AlbumMember
 import com.jstr14.picaday.domain.model.AlbumRole
 import com.jstr14.picaday.domain.model.DayEntry
+import com.jstr14.picaday.domain.model.Photo
+import com.jstr14.picaday.ui.components.CircularAvatar
+import com.jstr14.picaday.ui.components.StatusPillIndicator
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -106,7 +130,10 @@ fun AlbumDetailScreen(
     val isInviting by viewModel.isInviting.collectAsState()
     val isUploading by viewModel.isUploading.collectAsState()
     val inviteResult by viewModel.inviteResult.collectAsState()
+    val removeMemberError by viewModel.removeMemberError.collectAsState()
     val entries by viewModel.entries.collectAsState()
+    val allPhotos = entries.flatMap { entry -> entry.photos.map { entry.date to it } }
+
     var inviteEmail by remember { mutableStateOf("") }
     var showDeleteDialog by remember { mutableStateOf(false) }
     var selectedTab by remember { mutableIntStateOf(0) }
@@ -114,8 +141,37 @@ fun AlbumDetailScreen(
     val isSelectionMode = selectedUrls.isNotEmpty()
     var showBatchDeleteDialog by remember { mutableStateOf(false) }
     var showRenameDialog by remember { mutableStateOf(false) }
+    var viewingPhotoIndex by remember { mutableStateOf<Int?>(null) }
+    var pendingSaveUrls by remember { mutableStateOf<List<String>>(emptyList()) }
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
+
+    val savePermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted && pendingSaveUrls.isNotEmpty()) viewModel.savePhotosToGallery(pendingSaveUrls)
+        pendingSaveUrls = emptyList()
+    }
+
+    val onSaveToGallery: (String) -> Unit = { url ->
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            pendingSaveUrls = listOf(url)
+            savePermissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+        } else {
+            viewModel.savePhotosToGallery(listOf(url))
+        }
+    }
+
+    val onSaveSelectedToGallery: () -> Unit = {
+        val urls = selectedUrls.toList()
+        selectedUrls = emptySet()
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            pendingSaveUrls = urls
+            savePermissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+        } else {
+            viewModel.savePhotosToGallery(urls)
+        }
+    }
 
     val pickMedia = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickMultipleVisualMedia(maxItems = 10)
@@ -140,9 +196,29 @@ fun AlbumDetailScreen(
         }
     }
 
+    val msgSavedToGallery = stringResource(R.string.saved_to_gallery)
+    val msgErrorSaving = stringResource(R.string.error_saving)
     val msgInviteSent = stringResource(R.string.invite_sent)
     val msgInvitePending = stringResource(R.string.invite_pending_account)
     val msgInviteError = stringResource(R.string.invite_error)
+    val msgRemoveMemberError = stringResource(R.string.error_removing_member)
+    val msgRemovePendingInviteError = stringResource(R.string.error_removing_pending_invite)
+
+    LaunchedEffect(Unit) {
+        viewModel.saveToGalleryResult.collect { success ->
+            snackbarHostState.showSnackbar(if (success) msgSavedToGallery else msgErrorSaving)
+        }
+    }
+
+    LaunchedEffect(removeMemberError) {
+        val message = when (removeMemberError) {
+            is RemoveMemberError.Member -> msgRemoveMemberError
+            is RemoveMemberError.PendingInvite -> msgRemovePendingInviteError
+            null -> return@LaunchedEffect
+        }
+        snackbarHostState.showSnackbar(message)
+        viewModel.clearRemoveMemberError()
+    }
 
     LaunchedEffect(inviteResult) {
         val result = inviteResult ?: return@LaunchedEffect
@@ -164,6 +240,7 @@ fun AlbumDetailScreen(
     val currentUserRole = album?.members
         ?.find { it.userId == viewModel.currentUserId }?.role
     val canManageMembers = currentUserRole == AlbumRole.OWNER || currentUserRole == AlbumRole.ADMIN
+
     if (showRenameDialog) {
         RenameAlbumDialog(
             currentName = album?.name ?: "",
@@ -227,131 +304,140 @@ fun AlbumDetailScreen(
         )
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        if (isSelectionMode) pluralStringResource(R.plurals.selected_photos, selectedUrls.size, selectedUrls.size) else album?.name ?: "",
-                        color = MaterialTheme.colorScheme.onPrimary,
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = { if (isSelectionMode) selectedUrls = emptySet() else onBack() }) {
-                        Icon(
-                            if (isSelectionMode) Icons.Default.Close else Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = if (isSelectionMode) stringResource(R.string.cd_cancel_selection) else stringResource(R.string.cd_back),
-                            tint = MaterialTheme.colorScheme.onPrimary,
-                        )
-                    }
-                },
-                actions = {
-                    if (isSelectionMode) {
-                        IconButton(onClick = { showBatchDeleteDialog = true }) {
-                            Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.cd_delete_selection), tint = MaterialTheme.colorScheme.onPrimary)
-                        }
-                    } else {
-                        if (canManageMembers) {
-                            IconButton(onClick = { showRenameDialog = true }) {
-                                Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.cd_rename_album), tint = MaterialTheme.colorScheme.onPrimary)
-                            }
-                        }
-                        if (currentUserRole == AlbumRole.OWNER) {
-                            IconButton(onClick = { showDeleteDialog = true }) {
-                                Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.cd_delete_album), tint = MaterialTheme.colorScheme.onPrimary)
-                            }
-                        }
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                )
-            )
-        },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        floatingActionButton = {
-            if (selectedTab == 0) {
-                FloatingActionButton(
-                    onClick = { if (!isUploading) launchPickerWithLocationPermission() },
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary,
-                ) {
-                    if (isUploading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(24.dp),
-                            strokeWidth = 2.5.dp,
+    BackHandler(enabled = viewingPhotoIndex != null) {
+        viewingPhotoIndex = null
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = {
+                        Text(
+                            if (isSelectionMode) pluralStringResource(R.plurals.selected_photos, selectedUrls.size, selectedUrls.size) else album?.name ?: "",
                             color = MaterialTheme.colorScheme.onPrimary,
                         )
-                    } else {
-                        Icon(Icons.Default.AddPhotoAlternate, contentDescription = stringResource(R.string.cd_add_photos))
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = { if (isSelectionMode) selectedUrls = emptySet() else onBack() }) {
+                            Icon(
+                                if (isSelectionMode) Icons.Default.Close else Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = if (isSelectionMode) stringResource(R.string.cd_cancel_selection) else stringResource(R.string.cd_back),
+                                tint = MaterialTheme.colorScheme.onPrimary,
+                            )
+                        }
+                    },
+                    actions = {
+                        if (isSelectionMode) {
+                            IconButton(onClick = { onSaveSelectedToGallery() }) {
+                                Icon(Icons.Default.SaveAlt, contentDescription = stringResource(R.string.cd_save), tint = MaterialTheme.colorScheme.onPrimary)
+                            }
+                            IconButton(onClick = { showBatchDeleteDialog = true }) {
+                                Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.cd_delete_selection), tint = MaterialTheme.colorScheme.onPrimary)
+                            }
+                        } else {
+                            if (canManageMembers) {
+                                IconButton(onClick = { showRenameDialog = true }) {
+                                    Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.cd_rename_album), tint = MaterialTheme.colorScheme.onPrimary)
+                                }
+                            }
+                            if (currentUserRole == AlbumRole.OWNER) {
+                                IconButton(onClick = { showDeleteDialog = true }) {
+                                    Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.cd_delete_album), tint = MaterialTheme.colorScheme.onPrimary)
+                                }
+                            }
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                    )
+                )
+            },
+            snackbarHost = { SnackbarHost(snackbarHostState) },
+            floatingActionButton = {
+                if (selectedTab == 0) {
+                    FloatingActionButton(
+                        onClick = { if (!isUploading) launchPickerWithLocationPermission() },
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                    ) {
+                        if (isUploading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(24.dp),
+                                strokeWidth = 2.5.dp,
+                                color = MaterialTheme.colorScheme.onPrimary,
+                            )
+                        } else {
+                            Icon(Icons.Default.AddPhotoAlternate, contentDescription = stringResource(R.string.cd_add_photos))
+                        }
                     }
+                }
+            }
+        ) { padding ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+            ) {
+                TabRow(selectedTabIndex = selectedTab) {
+                    Tab(
+                        selected = selectedTab == 0,
+                        onClick = { selectedTab = 0 },
+                        text = { Text(stringResource(R.string.tab_photos)) }
+                    )
+                    Tab(
+                        selected = selectedTab == 1,
+                        onClick = { selectedTab = 1; selectedUrls = emptySet() },
+                        text = { Text(stringResource(R.string.tab_members)) }
+                    )
+                }
+
+                Box(modifier = Modifier.fillMaxSize()) {
+                    when (selectedTab) {
+                        0 -> PhotosTab(
+                            allPhotos = allPhotos,
+                            selectedUrls = selectedUrls,
+                            onSelectionChanged = { selectedUrls = it },
+                            canDeletePhoto = { uploadedByUid -> viewModel.canDeletePhoto(uploadedByUid) },
+                            onPhotoTap = { index -> viewingPhotoIndex = index },
+                        )
+                        1 -> MembersTab(
+                            album = album,
+                            canManageMembers = canManageMembers,
+                            isInviting = isInviting,
+                            inviteEmail = inviteEmail,
+                            onInviteEmailChange = { inviteEmail = it },
+                            onInvite = { viewModel.inviteByEmail(inviteEmail.trim()) },
+                            onRemoveMember = { viewModel.removeMember(it) },
+                            onRemovePendingInvite = { viewModel.removePendingInvite(it) },
+                        )
+                    }
+
+                    StatusPillIndicator(
+                        visible = isUploading,
+                        text = stringResource(R.string.saving_album_photos),
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(bottom = 32.dp)
+                    )
                 }
             }
         }
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-        ) {
-            TabRow(selectedTabIndex = selectedTab) {
-                Tab(
-                    selected = selectedTab == 0,
-                    onClick = { selectedTab = 0 },
-                    text = { Text(stringResource(R.string.tab_photos)) }
-                )
-                Tab(
-                    selected = selectedTab == 1,
-                    onClick = { selectedTab = 1; selectedUrls = emptySet() },
-                    text = { Text(stringResource(R.string.tab_members)) }
-                )
-            }
 
-            AnimatedVisibility(
-                visible = isUploading,
-                enter = fadeIn() + slideInVertically(initialOffsetY = { -it }),
-                exit = fadeOut() + slideOutVertically(targetOffsetY = { -it }),
-            ) {
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(16.dp),
-                            strokeWidth = 2.dp,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer,
-                        )
-                        Spacer(Modifier.width(12.dp))
-                        Text(
-                            stringResource(R.string.saving_album_photos),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer,
-                        )
-                    }
-                }
-            }
-
-            when (selectedTab) {
-                0 -> PhotosTab(
-                    entries = entries,
-                    selectedUrls = selectedUrls,
-                    onSelectionChanged = { selectedUrls = it },
-                    canDeletePhoto = { uploadedByUid -> viewModel.canDeletePhoto(uploadedByUid) },
-                )
-                1 -> MembersTab(
-                    album = album,
-                    canManageMembers = canManageMembers,
-                    isInviting = isInviting,
-                    inviteEmail = inviteEmail,
-                    onInviteEmailChange = { inviteEmail = it },
-                    onInvite = { viewModel.inviteByEmail(inviteEmail.trim()) },
-                    onRemoveMember = { viewModel.removeMember(it) },
-                )
-            }
+        if (viewingPhotoIndex != null) {
+            AlbumPhotoPager(
+                allPhotos = allPhotos,
+                initialIndex = viewingPhotoIndex!!.coerceIn(0, (allPhotos.size - 1).coerceAtLeast(0)),
+                canDeletePhoto = { uid -> viewModel.canDeletePhoto(uid) },
+                onSaveToGallery = onSaveToGallery,
+                onDeletePhoto = { date, url ->
+                    viewModel.deletePhoto(date, url)
+                    viewingPhotoIndex = null
+                },
+                onClose = { viewingPhotoIndex = null },
+            )
         }
     }
 }
@@ -359,13 +445,13 @@ fun AlbumDetailScreen(
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun PhotosTab(
-    entries: List<DayEntry>,
+    allPhotos: List<Pair<LocalDate, Photo>>,
     selectedUrls: Set<String>,
     onSelectionChanged: (Set<String>) -> Unit,
     canDeletePhoto: (uploadedByUid: String?) -> Boolean,
+    onPhotoTap: (Int) -> Unit,
 ) {
     val context = LocalContext.current
-    val allPhotos = entries.flatMap { entry -> entry.photos.map { entry.date to it } }
     val isSelectionMode = selectedUrls.isNotEmpty()
 
     if (allPhotos.isEmpty()) {
@@ -393,13 +479,14 @@ private fun PhotosTab(
             horizontalArrangement = Arrangement.spacedBy(2.dp),
             verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
-            items(allPhotos, key = { (_, photo) -> photo.url }) { (_, photo) ->
+            itemsIndexed(allPhotos, key = { _, (_, photo) -> photo.url }) { index, (_, photo) ->
                 val isSelected = photo.url in selectedUrls
                 val isDeletable = canDeletePhoto(photo.uploadedByUid)
 
                 Box(
                     modifier = Modifier
                         .aspectRatio(1f)
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
                         .then(
                             if (isSelected) Modifier.border(3.dp, MaterialTheme.colorScheme.primary)
                             else Modifier
@@ -419,6 +506,8 @@ private fun PhotosTab(
                                             android.widget.Toast.LENGTH_SHORT
                                         ).show()
                                     }
+                                } else {
+                                    onPhotoTap(index)
                                 }
                             },
                             onLongClick = {
@@ -435,7 +524,10 @@ private fun PhotosTab(
                         )
                 ) {
                     AsyncImage(
-                        model = photo.url,
+                        model = ImageRequest.Builder(context)
+                            .data(photo.url)
+                            .crossfade(true)
+                            .build(),
                         contentDescription = null,
                         modifier = Modifier
                             .fillMaxSize()
@@ -463,6 +555,245 @@ private fun PhotosTab(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
+@Composable
+private fun AlbumPhotoPager(
+    allPhotos: List<Pair<LocalDate, Photo>>,
+    initialIndex: Int,
+    canDeletePhoto: (String?) -> Boolean,
+    onSaveToGallery: (String) -> Unit,
+    onDeletePhoto: (LocalDate, String) -> Unit,
+    onClose: () -> Unit,
+) {
+    val pagerState = rememberPagerState(initialPage = initialIndex) { allPhotos.size }
+    var isZoomed by remember { mutableStateOf(false) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
+
+    val currentPair = allPhotos.getOrNull(pagerState.currentPage)
+    val currentDate = currentPair?.first
+    val currentPhoto = currentPair?.second
+    val isDeletable = canDeletePhoto(currentPhoto?.uploadedByUid)
+
+    LaunchedEffect(allPhotos.size) {
+        if (allPhotos.isEmpty()) onClose()
+    }
+
+    if (showDeleteDialog && currentDate != null && currentPhoto != null) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text(stringResource(R.string.delete_photo_title)) },
+            text = { Text(stringResource(R.string.delete_photo_body)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onDeletePhoto(currentDate, currentPhoto.url)
+                        showDeleteDialog = false
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                ) { Text(stringResource(R.string.delete)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) { Text(stringResource(R.string.cancel)) }
+            }
+        )
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black)
+    ) {
+        HorizontalPager(
+            state = pagerState,
+            modifier = Modifier.fillMaxSize(),
+            userScrollEnabled = !isZoomed,
+        ) { page ->
+            val (_, photo) = allPhotos[page]
+            var scale by remember { mutableStateOf(1f) }
+            var panOffset by remember { mutableStateOf(Offset.Zero) }
+            LaunchedEffect(pagerState.currentPage) {
+                if (pagerState.currentPage != page) {
+                    scale = 1f
+                    panOffset = Offset.Zero
+                    isZoomed = false
+                }
+            }
+            AsyncImage(
+                model = photo.url,
+                contentDescription = null,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .pointerInput(Unit) {
+                        detectTapGestures(onDoubleTap = {
+                            scale = 1f; panOffset = Offset.Zero; isZoomed = false
+                        })
+                    }
+                    .pointerInput(Unit) {
+                        awaitEachGesture {
+                            awaitFirstDown(requireUnconsumed = false)
+                            do {
+                                val event = awaitPointerEvent()
+                                val multiTouch = event.changes.count { it.pressed } >= 2
+                                if (multiTouch || scale > 1f) {
+                                    val zoomChange = event.calculateZoom()
+                                    val panChange = event.calculatePan()
+                                    val newScale = (scale * zoomChange).coerceIn(1f, 5f)
+                                    scale = newScale
+                                    panOffset = if (newScale <= 1f) Offset.Zero else panOffset + panChange
+                                    isZoomed = newScale > 1f
+                                    event.changes.forEach { if (it.positionChanged()) it.consume() }
+                                }
+                            } while (event.changes.any { it.pressed })
+                        }
+                    }
+                    .graphicsLayer {
+                        scaleX = scale; scaleY = scale
+                        translationX = panOffset.x; translationY = panOffset.y
+                    },
+                contentScale = ContentScale.Fit,
+            )
+        }
+
+        // Top gradient
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(120.dp)
+                .align(Alignment.TopCenter)
+                .background(Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.6f), Color.Transparent)))
+        )
+
+        // Top bar: close + page count
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .align(Alignment.TopCenter)
+                .statusBarsPadding()
+                .padding(horizontal = 4.dp)
+        ) {
+            IconButton(onClick = onClose, modifier = Modifier.align(Alignment.CenterStart)) {
+                Icon(Icons.Default.Close, contentDescription = stringResource(R.string.cd_back), tint = Color.White)
+            }
+            if (allPhotos.size > 1) {
+                Text(
+                    text = "${pagerState.currentPage + 1} / ${allPhotos.size}",
+                    color = Color.White,
+                    style = MaterialTheme.typography.labelLarge,
+                    modifier = Modifier.align(Alignment.Center)
+                )
+            }
+        }
+
+        // Bottom gradient
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(200.dp)
+                .align(Alignment.BottomCenter)
+                .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.85f))))
+        )
+
+        // Bottom info + actions
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .align(Alignment.BottomCenter)
+                .background(Color.Black.copy(alpha = 0.55f))
+                .navigationBarsPadding()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+        ) {
+            currentDate?.let { date ->
+                val formatted = date.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG))
+                val timeLabel = currentPhoto?.time?.let { " · $it" } ?: ""
+                Text(
+                    text = "$formatted$timeLabel",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                )
+            }
+            currentPhoto?.contributorName?.let { name ->
+                Text(
+                    text = name,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.White.copy(alpha = 0.75f),
+                )
+            }
+            if (currentPhoto?.lat != null && currentPhoto.lon != null) {
+                Spacer(Modifier.height(4.dp))
+                AlbumPhotoLocationButton(lat = currentPhoto.lat, lon = currentPhoto.lon)
+            }
+            Spacer(Modifier.height(8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(0.dp),
+            ) {
+                AlbumPhotoAction(
+                    icon = Icons.Default.SaveAlt,
+                    label = stringResource(R.string.cd_save),
+                    modifier = Modifier.weight(1f),
+                    onClick = { currentPhoto?.url?.let { onSaveToGallery(it) } },
+                )
+                if (isDeletable) {
+                    AlbumPhotoAction(
+                        icon = Icons.Default.DeleteOutline,
+                        label = stringResource(R.string.cd_remove),
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.weight(1f),
+                        onClick = { showDeleteDialog = true },
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AlbumPhotoLocationButton(lat: Double, lon: Double) {
+    val context = LocalContext.current
+    TextButton(
+        onClick = {
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("geo:$lat,$lon?q=$lat,$lon"))
+            context.startActivity(intent)
+        },
+        contentPadding = PaddingValues(horizontal = 0.dp, vertical = 4.dp),
+    ) {
+        Icon(
+            Icons.Default.LocationOn,
+            contentDescription = null,
+            tint = Color.White.copy(alpha = 0.85f),
+            modifier = Modifier.size(16.dp),
+        )
+        Spacer(Modifier.width(4.dp))
+        Text(
+            stringResource(R.string.open_in_maps),
+            style = MaterialTheme.typography.labelMedium,
+            color = Color.White.copy(alpha = 0.85f),
+        )
+    }
+}
+
+@Composable
+private fun AlbumPhotoAction(
+    icon: ImageVector,
+    label: String,
+    modifier: Modifier = Modifier,
+    tint: Color = Color.White,
+    onClick: () -> Unit,
+) {
+    Column(
+        modifier = modifier
+            .clickable { onClick() }
+            .padding(vertical = 8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        Icon(icon, contentDescription = label, tint = tint, modifier = Modifier.size(26.dp))
+        Spacer(Modifier.height(4.dp))
+        Text(label, style = MaterialTheme.typography.labelSmall, color = tint)
+    }
+}
+
 @Composable
 private fun MembersTab(
     album: com.jstr14.picaday.domain.model.Album?,
@@ -472,6 +803,7 @@ private fun MembersTab(
     onInviteEmailChange: (String) -> Unit,
     onInvite: () -> Unit,
     onRemoveMember: (String) -> Unit,
+    onRemovePendingInvite: (String) -> Unit,
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -553,7 +885,11 @@ private fun MembersTab(
                 )
             }
             items(pendingInvites, key = { "pending_$it" }) { email ->
-                PendingInviteRow(email = email)
+                PendingInviteRow(
+                    email = email,
+                    canRemove = canManageMembers,
+                    onRemove = { onRemovePendingInvite(email) },
+                )
             }
         }
     }
@@ -565,7 +901,7 @@ private fun MemberRow(
     canRemove: Boolean,
     onRemove: () -> Unit,
 ) {
-    val cardColor = lerp(Color.White, MaterialTheme.colorScheme.primary, 0.18f)
+    val cardColor = MaterialTheme.colorScheme.primaryContainer
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(10.dp),
@@ -576,28 +912,17 @@ private fun MemberRow(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(CircleShape)
-                    .border(1.dp, MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.2f), CircleShape),
-                contentAlignment = Alignment.Center,
+            CircularAvatar(
+                photoUrl = member.photoUrl,
+                size = 36.dp,
+                modifier = Modifier.border(1.dp, MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.2f), CircleShape),
             ) {
-                if (!member.photoUrl.isNullOrBlank()) {
-                    AsyncImage(
-                        model = member.photoUrl,
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize(),
-                    )
-                } else {
-                    Icon(
-                        imageVector = Icons.Default.Person,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.6f),
-                        modifier = Modifier.size(22.dp)
-                    )
-                }
+                Icon(
+                    imageVector = Icons.Default.Person,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.6f),
+                    modifier = Modifier.size(22.dp)
+                )
             }
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
@@ -638,8 +963,12 @@ private fun MemberRow(
 }
 
 @Composable
-private fun PendingInviteRow(email: String) {
-    val cardColor = lerp(Color.White, MaterialTheme.colorScheme.tertiary, 0.12f)
+private fun PendingInviteRow(
+    email: String,
+    canRemove: Boolean,
+    onRemove: () -> Unit,
+) {
+    val cardColor = MaterialTheme.colorScheme.tertiaryContainer
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(10.dp),
@@ -650,12 +979,10 @@ private fun PendingInviteRow(email: String) {
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(CircleShape)
-                    .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f), CircleShape),
-                contentAlignment = Alignment.Center,
+            CircularAvatar(
+                photoUrl = null,
+                size = 36.dp,
+                modifier = Modifier.border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f), CircleShape),
             ) {
                 Icon(
                     imageVector = Icons.Default.Person,
@@ -681,6 +1008,20 @@ private fun PendingInviteRow(email: String) {
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                     color = MaterialTheme.colorScheme.onTertiaryContainer,
                 )
+            }
+            if (canRemove) {
+                Spacer(Modifier.width(4.dp))
+                IconButton(
+                    onClick = onRemove,
+                    modifier = Modifier.size(36.dp)
+                ) {
+                    Icon(
+                        Icons.Default.Close,
+                        contentDescription = stringResource(R.string.cd_remove_pending_invite),
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
             }
         }
     }

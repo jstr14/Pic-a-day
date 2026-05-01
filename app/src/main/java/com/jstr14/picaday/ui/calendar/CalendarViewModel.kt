@@ -48,9 +48,21 @@ class CalendarViewModel @Inject constructor(
     private val _isYearMode = MutableStateFlow(false)
     val isYearMode: StateFlow<Boolean> = _isYearMode.asStateFlow()
 
-    fun setYearMode(enabled: Boolean) {
-        _isYearMode.value = enabled
-    }
+    private val _yearModeYear = MutableStateFlow(java.time.YearMonth.now().year)
+    val yearModeYear: StateFlow<Int> = _yearModeYear.asStateFlow()
+
+    private val _scrollToPreviousMonth = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val scrollToPreviousMonth: SharedFlow<Unit> = _scrollToPreviousMonth.asSharedFlow()
+
+    private val _scrollToNextMonth = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val scrollToNextMonth: SharedFlow<Unit> = _scrollToNextMonth.asSharedFlow()
+
+    fun setYearMode(enabled: Boolean) { _isYearMode.value = enabled }
+    fun setYearModeYear(year: Int) { _yearModeYear.value = year }
+    fun incrementYear() { _yearModeYear.value++ }
+    fun decrementYear() { _yearModeYear.value-- }
+    fun requestScrollToPreviousMonth() { _scrollToPreviousMonth.tryEmit(Unit) }
+    fun requestScrollToNextMonth() { _scrollToNextMonth.tryEmit(Unit) }
 
     val albums: StateFlow<List<Album>> = albumRepository.getAlbumsForUser()
         .catch { e -> e.printStackTrace() }

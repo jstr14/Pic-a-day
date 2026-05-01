@@ -84,6 +84,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.jstr14.picaday.R
 import coil.compose.AsyncImage
+import com.jstr14.picaday.ui.components.StatusPillIndicator
 import com.jstr14.picaday.domain.model.Album
 import com.jstr14.picaday.domain.model.DayEntry
 import com.jstr14.picaday.domain.model.Photo
@@ -347,71 +348,21 @@ internal fun DayImageSection(
                 .navigationBarsPadding()
                 .padding(bottom = 40.dp),
         ) {
-            AnimatedVisibility(
+            StatusPillIndicator(
                 visible = isUploading,
-                enter = fadeIn() + slideInVertically(initialOffsetY = { it }),
-                exit = fadeOut() + slideOutVertically(targetOffsetY = { it }),
-                modifier = Modifier
-                    .padding(horizontal = 24.dp)
-                    .padding(bottom = 8.dp)
-            ) {
-                Surface(
-                    shape = RoundedCornerShape(24.dp),
-                    color = MaterialTheme.colorScheme.inverseSurface,
-                    tonalElevation = 8.dp
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(16.dp),
-                            strokeWidth = 2.dp,
-                            color = MaterialTheme.colorScheme.inverseOnSurface
-                        )
-                        Spacer(Modifier.width(12.dp))
-                        Text(
-                            stringResource(R.string.uploading_memories),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.inverseOnSurface
-                        )
-                    }
-                }
-            }
+                text = stringResource(R.string.uploading_memories),
+                containerColor = MaterialTheme.colorScheme.inverseSurface,
+                contentColor = MaterialTheme.colorScheme.inverseOnSurface,
+                modifier = Modifier.align(Alignment.CenterHorizontally)
+            )
 
-            AnimatedVisibility(
+            StatusPillIndicator(
                 visible = isDeleting,
-                enter = fadeIn() + slideInVertically(initialOffsetY = { it }),
-                exit = fadeOut() + slideOutVertically(targetOffsetY = { it }),
-                modifier = Modifier
-                    .align(Alignment.CenterHorizontally)
-                    .padding(bottom = 8.dp)
-            ) {
-                Surface(
-                    shape = RoundedCornerShape(24.dp),
-                    color = MaterialTheme.colorScheme.errorContainer,
-                    tonalElevation = 8.dp
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(16.dp),
-                            strokeWidth = 2.dp,
-                            color = MaterialTheme.colorScheme.onErrorContainer
-                        )
-                        Spacer(Modifier.width(12.dp))
-                        Text(
-                            stringResource(R.string.deleting),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onErrorContainer
-                        )
-                    }
-                }
-            }
+                text = stringResource(R.string.deleting),
+                containerColor = MaterialTheme.colorScheme.errorContainer,
+                contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                modifier = Modifier.align(Alignment.CenterHorizontally)
+            )
 
             Row(
                 modifier = Modifier
@@ -515,3 +466,4 @@ private fun PhotoGrid(
         }
     }
 }
+

@@ -10,11 +10,8 @@ import androidx.core.content.ContextCompat
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
@@ -30,7 +27,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.jstr14.picaday.ui.calendar.components.CalendarDayCell
 import com.jstr14.picaday.ui.components.AlbumSelectorSheet
-import com.jstr14.picaday.ui.calendar.components.CalendarHeader
+import com.jstr14.picaday.ui.components.StatusPillIndicator
 import com.jstr14.picaday.ui.calendar.components.DaysOfWeekTitle
 import com.jstr14.picaday.ui.calendar.components.YearOverviewCalendar
 import com.jstr14.picaday.ui.navigation.Screen
@@ -65,8 +62,8 @@ fun CalendarScreen(
     val isUploading by viewModel.isUploading.collectAsState()
     val yearEntryDates by viewModel.yearEntryDates.collectAsState()
     val albums by viewModel.albums.collectAsState()
-    var isYearMode by remember { mutableStateOf(false) }
-    var yearModeYear by remember { mutableStateOf(currentMonth.year) }
+    val isYearMode by viewModel.isYearMode.collectAsState()
+    val yearModeYear by viewModel.yearModeYear.collectAsState()
     var showAlbumSelector by remember { mutableStateOf(false) }
     var selectedAlbumId by remember { mutableStateOf<String?>(null) }
 
@@ -74,14 +71,22 @@ fun CalendarScreen(
         if (isYearMode) viewModel.loadYearData(yearModeYear)
     }
 
-    LaunchedEffect(isYearMode) {
-        viewModel.setYearMode(isYearMode)
+    LaunchedEffect(Unit) {
+        viewModel.scrollToToday.collect {
+            viewModel.setYearMode(false)
+            state.animateScrollToMonth(currentMonth)
+        }
     }
 
     LaunchedEffect(Unit) {
-        viewModel.scrollToToday.collect {
-            isYearMode = false
-            state.animateScrollToMonth(currentMonth)
+        viewModel.scrollToPreviousMonth.collect {
+            state.animateScrollToMonth(state.firstVisibleMonth.yearMonth.minusMonths(1))
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.scrollToNextMonth.collect {
+            state.animateScrollToMonth(state.firstVisibleMonth.yearMonth.plusMonths(1))
         }
     }
 
@@ -154,28 +159,10 @@ fun CalendarScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
-                .padding(padding)
+                .padding(bottom = padding.calculateBottomPadding())
         ) {
             // Calendar - Main content
-            Column(modifier = Modifier.fillMaxSize()) {
-                CalendarHeader(
-                    visibleMonth = visibleMonth,
-                    isYearMode = isYearMode,
-                    yearModeYear = yearModeYear,
-                    onPreviousMonthClick = {
-                        if (isYearMode) yearModeYear--
-                        else scope.launch { state.animateScrollToMonth(visibleMonth.minusMonths(1)) }
-                    },
-                    onNextMonthClick = {
-                        if (isYearMode) yearModeYear++
-                        else scope.launch { state.animateScrollToMonth(visibleMonth.plusMonths(1)) }
-                    },
-                    onMonthTitleClick = {
-                        if (!isYearMode) yearModeYear = visibleMonth.year
-                        isYearMode = !isYearMode
-                    }
-                )
-
+            Column(modifier = Modifier.fillMaxSize().padding(top = 32.dp)) {
                 AnimatedVisibility(
                     visible = !isYearMode,
                     enter = fadeIn(),
@@ -207,7 +194,7 @@ fun CalendarScreen(
                         entryDates = yearEntryDates,
                         firstDayOfWeek = daysOfWeek.first(),
                         onMonthClick = { yearMonth ->
-                            isYearMode = false
+                            viewModel.setYearMode(false)
                             scope.launch { state.animateScrollToMonth(yearMonth) }
                         }
                     )
@@ -215,38 +202,15 @@ fun CalendarScreen(
             }
 
             // Loading indicator
-            AnimatedVisibility(
+            StatusPillIndicator(
                 visible = isUploading,
-                enter = fadeIn() + slideInVertically(initialOffsetY = { it }),
-                exit = fadeOut() + slideOutVertically(targetOffsetY = { it }),
+                text = stringResource(R.string.saving_memories),
+                containerColor = MaterialTheme.colorScheme.inverseSurface,
+                contentColor = MaterialTheme.colorScheme.inverseOnSurface,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .padding(bottom = 32.dp)
-            ) {
-                Surface(
-                    shape = RoundedCornerShape(24.dp),
-                    color = MaterialTheme.colorScheme.surfaceVariant,
-                    tonalElevation = 6.dp,
-                    shadowElevation = 2.dp
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(18.dp),
-                            strokeWidth = 2.dp,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                        Spacer(Modifier.width(12.dp))
-                        Text(
-                            text = stringResource(R.string.saving_memories),
-                            style = MaterialTheme.typography.labelLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-            }
+            )
         }
     }
 }

@@ -55,6 +55,7 @@ android {
             resValue("string", "app_name", "PicADay Debug")
         }
         release {
+            resValue("string", "app_name", "Pic-A-Day")
             isMinifyEnabled = true
             signingConfig = signingConfigs.getByName("release")
             proguardFiles(

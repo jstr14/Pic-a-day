@@ -27,6 +27,8 @@ interface AlbumRepository {
 
     suspend fun removeMember(albumId: String, userId: String)
 
+    suspend fun removePendingInvite(albumId: String, email: String)
+
     suspend fun renameAlbum(albumId: String, newName: String)
 
     suspend fun deleteAlbum(albumId: String)

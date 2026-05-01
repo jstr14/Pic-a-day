@@ -1,6 +1,7 @@
 package com.jstr14.picaday.ui.theme
 
 import android.app.Activity
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.darkColorScheme
@@ -17,7 +18,7 @@ import com.jstr14.picaday.ui.theme.util.SeasonManager
 fun PicADayTheme(
     specialDay: SeasonManager.SpecialDay = SeasonManager.getSpecialDay(),
     season: Season = SeasonManager.getCurrentSeason(),
-    darkTheme: Boolean = false,
+    darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit
 ) {
     val colorScheme: ColorScheme = when {
@@ -64,7 +65,11 @@ private val SpringDarkScheme = darkColorScheme(
     primary = SpringPrimaryDark, onPrimary = SpringOnPrimaryDark,
     primaryContainer = SpringContainerDark, onPrimaryContainer = SpringSecondary,
     secondary = SpringAccent, onSecondary = SpringOnPrimaryDark,
-    background = SpringBackgroundDark, surface = SpringContainerDark, onBackground = White
+    background = SpringBackgroundDark, surface = SpringContainerDark, onBackground = White,
+    surfaceVariant = SpringContainerDark,
+    surfaceContainer = SpringContainerDark,
+    surfaceContainerLow = SpringBackgroundDark,
+    surfaceContainerHigh = SpringContainerDark,
 )
 
 private val SummerLightScheme = lightColorScheme(
@@ -77,7 +82,11 @@ private val SummerDarkScheme = darkColorScheme(
     primary = SummerPrimaryDark, onPrimary = SummerOnPrimaryDark,
     primaryContainer = SummerContainerDark, onPrimaryContainer = SummerSecondary,
     secondary = SummerTeal, onSecondary = SummerOnPrimaryDark,
-    background = SummerBackgroundDark, surface = SummerContainerDark, onBackground = White
+    background = SummerBackgroundDark, surface = SummerContainerDark, onBackground = White,
+    surfaceVariant = SummerContainerDark,
+    surfaceContainer = SummerContainerDark,
+    surfaceContainerLow = SummerBackgroundDark,
+    surfaceContainerHigh = SummerContainerDark,
 )
 
 private val AutumnLightScheme = lightColorScheme(
@@ -90,7 +99,11 @@ private val AutumnDarkScheme = darkColorScheme(
     primary = AutumnPrimaryDark, onPrimary = AutumnOnPrimaryDark,
     primaryContainer = AutumnContainerDark, onPrimaryContainer = AutumnSurface,
     secondary = AutumnAmber, onSecondary = AutumnOnPrimaryDark,
-    background = AutumnBackgroundDark, surface = AutumnContainerDark, onBackground = White
+    background = AutumnBackgroundDark, surface = AutumnContainerDark, onBackground = White,
+    surfaceVariant = AutumnContainerDark,
+    surfaceContainer = AutumnContainerDark,
+    surfaceContainerLow = AutumnBackgroundDark,
+    surfaceContainerHigh = AutumnContainerDark,
 )
 
 private val WinterLightScheme = lightColorScheme(
@@ -103,7 +116,11 @@ private val WinterDarkScheme = darkColorScheme(
     primary = WinterPrimaryDark, onPrimary = WinterOnPrimaryDark,
     primaryContainer = WinterContainerDark, onPrimaryContainer = WinterSecondary,
     secondary = WinterLavender, onSecondary = WinterOnPrimaryDark,
-    background = WinterBackgroundDark, surface = WinterContainerDark, onBackground = White
+    background = WinterBackgroundDark, surface = WinterContainerDark, onBackground = White,
+    surfaceVariant = WinterContainerDark,
+    surfaceContainer = WinterContainerDark,
+    surfaceContainerLow = WinterBackgroundDark,
+    surfaceContainerHigh = WinterContainerDark,
 )
 
 // --- SPECIAL DAY SCHEMES ---
@@ -118,7 +135,11 @@ private val HalloweenDarkScheme = darkColorScheme(
     primary = HalloweenSurface, onPrimary = HalloweenOnPrimaryDark,
     primaryContainer = HalloweenContainerDark, onPrimaryContainer = HalloweenSurface,
     secondary = HalloweenSoftPurple, onSecondary = HalloweenOnSecondaryDark,
-    background = HalloweenDarkBackground, surface = HalloweenSurfaceDark, onBackground = White
+    background = HalloweenDarkBackground, surface = HalloweenSurfaceDark, onBackground = White,
+    surfaceVariant = HalloweenSurfaceDark,
+    surfaceContainer = HalloweenSurfaceDark,
+    surfaceContainerLow = HalloweenDarkBackground,
+    surfaceContainerHigh = HalloweenSurfaceDark,
 )
 
 private val ChristmasLightScheme = lightColorScheme(
@@ -131,7 +152,11 @@ private val ChristmasDarkScheme = darkColorScheme(
     primary = ChristmasPrimaryDark, onPrimary = ChristmasOnPrimaryContainer,
     primaryContainer = ChristmasContainerDark, onPrimaryContainer = ChristmasRedLight,
     secondary = ChristmasSecondaryDark, onSecondary = ChristmasOnSecondaryDark,
-    background = ChristmasBackgroundDark, surface = ChristmasSurfaceDark, onBackground = White
+    background = ChristmasBackgroundDark, surface = ChristmasSurfaceDark, onBackground = White,
+    surfaceVariant = ChristmasSurfaceDark,
+    surfaceContainer = ChristmasSurfaceDark,
+    surfaceContainerLow = ChristmasBackgroundDark,
+    surfaceContainerHigh = ChristmasSurfaceDark,
 )
 
 private val ValentineLightScheme = lightColorScheme(
@@ -144,7 +169,11 @@ private val ValentineDarkScheme = darkColorScheme(
     primary = ValentineBlush, onPrimary = ValentineOnPrimaryContainer,
     primaryContainer = ValentineContainerDark, onPrimaryContainer = ValentineSurface,
     secondary = ValentineMauve, onSecondary = White,
-    background = ValentineBackgroundDark, surface = ValentineSurfaceDark, onBackground = White
+    background = ValentineBackgroundDark, surface = ValentineSurfaceDark, onBackground = White,
+    surfaceVariant = ValentineSurfaceDark,
+    surfaceContainer = ValentineSurfaceDark,
+    surfaceContainerLow = ValentineBackgroundDark,
+    surfaceContainerHigh = ValentineSurfaceDark,
 )
 
 private val NewYearLightScheme = lightColorScheme(
@@ -157,5 +186,9 @@ private val NewYearDarkScheme = darkColorScheme(
     primary = NewYearChampagne, onPrimary = NewYearOnPrimaryContainer,
     primaryContainer = NewYearContainerDark, onPrimaryContainer = NewYearSurface,
     secondary = NewYearMidnight, onSecondary = White,
-    background = NewYearBackgroundDark, surface = NewYearSurfaceDark, onBackground = White
+    background = NewYearBackgroundDark, surface = NewYearSurfaceDark, onBackground = White,
+    surfaceVariant = NewYearSurfaceDark,
+    surfaceContainer = NewYearSurfaceDark,
+    surfaceContainerLow = NewYearBackgroundDark,
+    surfaceContainerHigh = NewYearSurfaceDark,
 )
