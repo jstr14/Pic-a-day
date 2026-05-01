@@ -15,6 +15,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.res.stringResource
+import com.jstr14.picaday.R
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -35,11 +37,11 @@ fun LoginScreen(
     if (uiState is AuthState.Error) {
         AlertDialog(
             onDismissRequest = { authViewModel.clearError() },
-            title = { Text("Sign-In failed") },
+            title = { Text(stringResource(R.string.sign_in_failed)) },
             text = { Text((uiState as AuthState.Error).message) },
             confirmButton = {
                 TextButton(onClick = { authViewModel.clearError() }) {
-                    Text("OK")
+                    Text(stringResource(R.string.ok))
                 }
             }
         )
@@ -63,14 +65,14 @@ fun LoginScreen(
 
             // Text sits in the background-colored bottom area, below the wave
             Text(
-                text = "PicADay",
+                text = stringResource(R.string.app_title),
                 style = MaterialTheme.typography.headlineLarge,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary
             )
             Spacer(Modifier.height(6.dp))
             Text(
-                text = "Capture a moment every day",
+                text = stringResource(R.string.capture_tagline),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.55f),
                 textAlign = TextAlign.Center
@@ -142,7 +144,7 @@ private fun SignInButton(onClick: () -> Unit) {
         )
     ) {
         Text(
-            text = "Sign in with Google",
+            text = stringResource(R.string.sign_in_with_google),
             style = MaterialTheme.typography.labelLarge,
             fontWeight = FontWeight.SemiBold
         )

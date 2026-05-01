@@ -18,8 +18,11 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.jstr14.picaday.R
 import com.jstr14.picaday.domain.model.Album
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -38,7 +41,7 @@ fun AlbumSelectorSheet(
         sheetState = sheetState,
     ) {
         Text(
-            text = "Añadir a...",
+            text = stringResource(R.string.add_to),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
             modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp)
@@ -48,7 +51,7 @@ fun AlbumSelectorSheet(
 
         if (showPersonalOption) {
             ListItem(
-                headlineContent = { Text("Mi diario personal") },
+                headlineContent = { Text(stringResource(R.string.personal_diary)) },
                 leadingContent = {
                     Icon(
                         Icons.Default.Person,
@@ -67,7 +70,7 @@ fun AlbumSelectorSheet(
                 headlineContent = { Text(album.name) },
                 supportingContent = {
                     val count = album.members.size
-                    Text("$count ${if (count == 1) "miembro" else "miembros"}")
+                    Text(pluralStringResource(R.plurals.member_count, count, count))
                 },
                 leadingContent = {
                     Icon(

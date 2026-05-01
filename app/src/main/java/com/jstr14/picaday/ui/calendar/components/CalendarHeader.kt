@@ -20,10 +20,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.jstr14.picaday.R
 import java.time.DayOfWeek
 import java.time.YearMonth
 import java.time.format.TextStyle
@@ -51,7 +53,7 @@ fun CalendarHeader(
         IconButton(onClick = onPreviousMonthClick) {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
-                contentDescription = if (isYearMode) "Previous year" else "Previous month",
+                contentDescription = if (isYearMode) stringResource(R.string.cd_previous_year) else stringResource(R.string.cd_previous_month),
                 modifier = Modifier.size(28.dp),
                 tint = MaterialTheme.colorScheme.onSurface
             )
@@ -75,7 +77,7 @@ fun CalendarHeader(
             )
             Icon(
                 imageVector = if (isYearMode) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                contentDescription = if (isYearMode) "Back to month view" else "Show year overview",
+                contentDescription = if (isYearMode) stringResource(R.string.cd_back_to_month) else stringResource(R.string.cd_show_year),
                 modifier = Modifier.size(20.dp),
                 tint = MaterialTheme.colorScheme.onSurface
             )
@@ -84,7 +86,7 @@ fun CalendarHeader(
         IconButton(onClick = onNextMonthClick) {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                contentDescription = if (isYearMode) "Next year" else "Next month",
+                contentDescription = if (isYearMode) stringResource(R.string.cd_next_year) else stringResource(R.string.cd_next_month),
                 modifier = Modifier.size(28.dp),
                 tint = MaterialTheme.colorScheme.onSurface
             )

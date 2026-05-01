@@ -79,8 +79,10 @@ import androidx.compose.ui.input.pointer.positionChanged
 import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.jstr14.picaday.R
 import coil.compose.AsyncImage
 import com.jstr14.picaday.domain.model.Album
 import com.jstr14.picaday.domain.model.DayEntry
@@ -128,8 +130,8 @@ internal fun DayImageSection(
     if (showDeletePhotoDialog) {
         AlertDialog(
             onDismissRequest = { showDeletePhotoDialog = false; pendingDeleteUrl = null },
-            title = { Text("¿Eliminar foto?") },
-            text = { Text("Esta foto se eliminará permanentemente.") },
+            title = { Text(stringResource(R.string.delete_photo_title)) },
+            text = { Text(stringResource(R.string.delete_photo_body)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -138,11 +140,11 @@ internal fun DayImageSection(
                         showDeletePhotoDialog = false
                     },
                     colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
-                ) { Text("Eliminar") }
+                ) { Text(stringResource(R.string.delete)) }
             },
             dismissButton = {
                 TextButton(onClick = { showDeletePhotoDialog = false; pendingDeleteUrl = null }) {
-                    Text("Cancelar")
+                    Text(stringResource(R.string.cancel))
                 }
             }
         )
@@ -151,16 +153,16 @@ internal fun DayImageSection(
     if (showDeleteDayDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDayDialog = false },
-            title = { Text("¿Borrar día completo?") },
-            text = { Text("Se eliminarán permanentemente todas las fotos y el texto de este día.") },
+            title = { Text(stringResource(R.string.delete_day_title)) },
+            text = { Text(stringResource(R.string.delete_day_body)) },
             confirmButton = {
                 TextButton(
                     onClick = { onDeleteAll(); showDeleteDayDialog = false },
                     colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
-                ) { Text("Borrar Todo") }
+                ) { Text(stringResource(R.string.delete_all)) }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteDayDialog = false }) { Text("Cancelar") }
+                TextButton(onClick = { showDeleteDayDialog = false }) { Text(stringResource(R.string.cancel)) }
             }
         )
     }
@@ -277,7 +279,7 @@ internal fun DayImageSection(
                 onClick = onBack,
                 modifier = Modifier.align(Alignment.CenterStart)
             ) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, "Atrás", tint = Color.White)
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.cd_back), tint = Color.White)
             }
 
             Column(
@@ -308,15 +310,15 @@ internal fun DayImageSection(
                 IconButton(onClick = { isGridView = !isGridView }) {
                     Icon(
                         imageVector = Icons.Outlined.GridView,
-                        contentDescription = if (isGridView) "Ver como carrusel" else "Ver como cuadrícula",
+                        contentDescription = if (isGridView) stringResource(R.string.cd_toggle_carousel) else stringResource(R.string.cd_toggle_grid),
                         tint = if (isGridView) Color.White else Color.White.copy(alpha = 0.6f)
                     )
                 }
                 if (!isGridView) {
                     IconButton(
-                        onClick = { Toast.makeText(context, "Favorito (próximamente)", Toast.LENGTH_SHORT).show() }
+                        onClick = { Toast.makeText(context, context.getString(R.string.favorite_coming_soon), Toast.LENGTH_SHORT).show() }
                     ) {
-                        Icon(Icons.Outlined.FavoriteBorder, "Favorito", tint = Color.White)
+                        Icon(Icons.Outlined.FavoriteBorder, stringResource(R.string.cd_favorite), tint = Color.White)
                     }
                 }
             }
@@ -371,7 +373,7 @@ internal fun DayImageSection(
                         )
                         Spacer(Modifier.width(12.dp))
                         Text(
-                            "Añadiendo recuerdos...",
+                            stringResource(R.string.uploading_memories),
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.inverseOnSurface
                         )
@@ -403,7 +405,7 @@ internal fun DayImageSection(
                         )
                         Spacer(Modifier.width(12.dp))
                         Text(
-                            "Eliminando...",
+                            stringResource(R.string.deleting),
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onErrorContainer
                         )
@@ -422,17 +424,17 @@ internal fun DayImageSection(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     contentColor = MaterialTheme.colorScheme.onPrimaryContainer
                 ) {
-                    Icon(Icons.Default.AddPhotoAlternate, "Añadir")
+                    Icon(Icons.Default.AddPhotoAlternate, stringResource(R.string.cd_add))
                 }
             }
 
             // Photo-specific actions — hidden in grid mode (no current photo selected)
             if (!isGridView) {
                 Row(modifier = Modifier.fillMaxWidth()) {
-                    BottomAction(Icons.Default.Share, "Share", modifier = Modifier.weight(1f)) {
-                        Toast.makeText(context, "Compartir (próximamente)", Toast.LENGTH_SHORT).show()
+                    BottomAction(Icons.Default.Share, stringResource(R.string.cd_share), modifier = Modifier.weight(1f)) {
+                        Toast.makeText(context, context.getString(R.string.share_coming_soon), Toast.LENGTH_SHORT).show()
                     }
-                    BottomAction(Icons.Default.SaveAlt, "Save", modifier = Modifier.weight(1f)) {
+                    BottomAction(Icons.Default.SaveAlt, stringResource(R.string.cd_save), modifier = Modifier.weight(1f)) {
                         val url = entry.imageUrls.getOrNull(pagerState.currentPage) ?: return@BottomAction
                         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
                             pendingSaveUrl = url
@@ -442,11 +444,11 @@ internal fun DayImageSection(
                         }
                     }
                     if (albums.isNotEmpty()) {
-                        BottomAction(Icons.Default.PhotoAlbum, "Álbum", modifier = Modifier.weight(1f)) {
+                        BottomAction(Icons.Default.PhotoAlbum, stringResource(R.string.cd_album), modifier = Modifier.weight(1f)) {
                             entry.photos.getOrNull(pagerState.currentPage)?.let { onAddToAlbum(it) }
                         }
                     }
-                    BottomAction(Icons.Default.DeleteOutline, "Remove", modifier = Modifier.weight(1f)) {
+                    BottomAction(Icons.Default.DeleteOutline, stringResource(R.string.cd_remove), modifier = Modifier.weight(1f)) {
                         if (!isDeleting) entry.imageUrls.getOrNull(pagerState.currentPage)?.let { url ->
                             pendingDeleteUrl = url
                             showDeletePhotoDialog = true
@@ -454,7 +456,7 @@ internal fun DayImageSection(
                     }
                     BottomAction(
                         icon = Icons.Default.DeleteForever,
-                        label = "Remove all",
+                        label = stringResource(R.string.label_remove_all),
                         tint = MaterialTheme.colorScheme.error,
                         modifier = Modifier.weight(1f),
                         onClick = { if (!isDeleting) showDeleteDayDialog = true }
@@ -503,7 +505,7 @@ private fun PhotoGrid(
                     ) {
                         Icon(
                             imageVector = Icons.Default.PhotoAlbum,
-                            contentDescription = "En álbum",
+                            contentDescription = stringResource(R.string.cd_in_album),
                             tint = Color.White,
                             modifier = Modifier.size(14.dp)
                         )

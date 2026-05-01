@@ -82,6 +82,9 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import com.jstr14.picaday.R
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -137,18 +140,22 @@ fun AlbumDetailScreen(
         }
     }
 
+    val msgInviteSent = stringResource(R.string.invite_sent)
+    val msgInvitePending = stringResource(R.string.invite_pending_account)
+    val msgInviteError = stringResource(R.string.invite_error)
+
     LaunchedEffect(inviteResult) {
         val result = inviteResult ?: return@LaunchedEffect
         val message = when (result) {
             is InviteResult.Success -> {
                 inviteEmail = ""
-                "Invitación enviada correctamente"
+                msgInviteSent
             }
             is InviteResult.PendingInvite -> {
                 inviteEmail = ""
-                "Este usuario aún no tiene cuenta. Se unirá al álbum automáticamente cuando se registre."
+                msgInvitePending
             }
-            is InviteResult.Error -> "Error al enviar la invitación"
+            is InviteResult.Error -> msgInviteError
         }
         snackbarHostState.showSnackbar(message)
         viewModel.clearInviteResult()
@@ -171,8 +178,8 @@ fun AlbumDetailScreen(
     if (showBatchDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showBatchDeleteDialog = false },
-            title = { Text("¿Eliminar ${selectedUrls.size} foto${if (selectedUrls.size > 1) "s" else ""} del álbum?") },
-            text = { Text("Las fotos se eliminarán de este álbum. Si también están en tu diario personal, no se verán afectadas.") },
+            title = { Text(pluralStringResource(R.plurals.delete_photos_title, selectedUrls.size, selectedUrls.size)) },
+            text = { Text(stringResource(R.string.delete_album_photos_body)) },
             confirmButton = {
                 TextButton(onClick = {
                     val photosByDate = entries
@@ -183,11 +190,11 @@ fun AlbumDetailScreen(
                     selectedUrls = emptySet()
                     showBatchDeleteDialog = false
                 }) {
-                    Text("Eliminar", color = MaterialTheme.colorScheme.error)
+                    Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showBatchDeleteDialog = false }) { Text("Cancelar") }
+                TextButton(onClick = { showBatchDeleteDialog = false }) { Text(stringResource(R.string.cancel)) }
             }
         )
     }
@@ -195,8 +202,8 @@ fun AlbumDetailScreen(
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
-            title = { Text("Eliminar álbum") },
-            text = { Text("Tus fotos se moverán a tu diario personal. Las fotos subidas por otros miembros se eliminarán permanentemente.") },
+            title = { Text(stringResource(R.string.delete_album_title)) },
+            text = { Text(stringResource(R.string.delete_album_body)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -204,7 +211,7 @@ fun AlbumDetailScreen(
                         viewModel.deleteAlbumAndMovePhotos(onComplete = onBack)
                     }
                 ) {
-                    Text("Mover mis fotos y eliminar")
+                    Text(stringResource(R.string.move_my_photos_and_delete))
                 }
             },
             dismissButton = {
@@ -214,7 +221,7 @@ fun AlbumDetailScreen(
                         viewModel.deleteAlbum(onComplete = onBack)
                     }
                 ) {
-                    Text("Eliminar todo", color = MaterialTheme.colorScheme.error)
+                    Text(stringResource(R.string.delete_all_album), color = MaterialTheme.colorScheme.error)
                 }
             }
         )
@@ -225,7 +232,7 @@ fun AlbumDetailScreen(
             TopAppBar(
                 title = {
                     Text(
-                        if (isSelectionMode) "${selectedUrls.size} seleccionada${if (selectedUrls.size > 1) "s" else ""}" else album?.name ?: "",
+                        if (isSelectionMode) pluralStringResource(R.plurals.selected_photos, selectedUrls.size, selectedUrls.size) else album?.name ?: "",
                         color = MaterialTheme.colorScheme.onPrimary,
                     )
                 },
@@ -233,7 +240,7 @@ fun AlbumDetailScreen(
                     IconButton(onClick = { if (isSelectionMode) selectedUrls = emptySet() else onBack() }) {
                         Icon(
                             if (isSelectionMode) Icons.Default.Close else Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = if (isSelectionMode) "Cancelar selección" else "Atrás",
+                            contentDescription = if (isSelectionMode) stringResource(R.string.cd_cancel_selection) else stringResource(R.string.cd_back),
                             tint = MaterialTheme.colorScheme.onPrimary,
                         )
                     }
@@ -241,17 +248,17 @@ fun AlbumDetailScreen(
                 actions = {
                     if (isSelectionMode) {
                         IconButton(onClick = { showBatchDeleteDialog = true }) {
-                            Icon(Icons.Default.Delete, contentDescription = "Eliminar selección", tint = MaterialTheme.colorScheme.onPrimary)
+                            Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.cd_delete_selection), tint = MaterialTheme.colorScheme.onPrimary)
                         }
                     } else {
                         if (canManageMembers) {
                             IconButton(onClick = { showRenameDialog = true }) {
-                                Icon(Icons.Default.Edit, contentDescription = "Renombrar álbum", tint = MaterialTheme.colorScheme.onPrimary)
+                                Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.cd_rename_album), tint = MaterialTheme.colorScheme.onPrimary)
                             }
                         }
                         if (currentUserRole == AlbumRole.OWNER) {
                             IconButton(onClick = { showDeleteDialog = true }) {
-                                Icon(Icons.Default.Delete, contentDescription = "Eliminar álbum", tint = MaterialTheme.colorScheme.onPrimary)
+                                Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.cd_delete_album), tint = MaterialTheme.colorScheme.onPrimary)
                             }
                         }
                     }
@@ -276,7 +283,7 @@ fun AlbumDetailScreen(
                             color = MaterialTheme.colorScheme.onPrimary,
                         )
                     } else {
-                        Icon(Icons.Default.AddPhotoAlternate, contentDescription = "Añadir fotos")
+                        Icon(Icons.Default.AddPhotoAlternate, contentDescription = stringResource(R.string.cd_add_photos))
                     }
                 }
             }
@@ -291,12 +298,12 @@ fun AlbumDetailScreen(
                 Tab(
                     selected = selectedTab == 0,
                     onClick = { selectedTab = 0 },
-                    text = { Text("Fotos") }
+                    text = { Text(stringResource(R.string.tab_photos)) }
                 )
                 Tab(
                     selected = selectedTab == 1,
                     onClick = { selectedTab = 1; selectedUrls = emptySet() },
-                    text = { Text("Miembros") }
+                    text = { Text(stringResource(R.string.tab_members)) }
                 )
             }
 
@@ -320,7 +327,7 @@ fun AlbumDetailScreen(
                         )
                         Spacer(Modifier.width(12.dp))
                         Text(
-                            "Guardando fotos en el álbum...",
+                            stringResource(R.string.saving_album_photos),
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onPrimaryContainer,
                         )
@@ -372,7 +379,7 @@ private fun PhotosTab(
                 )
                 Spacer(modifier = Modifier.size(16.dp))
                 Text(
-                    "Sin fotos todavía",
+                    stringResource(R.string.no_photos_yet),
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f)
                 )
@@ -408,7 +415,7 @@ private fun PhotosTab(
                                     } else {
                                         android.widget.Toast.makeText(
                                             context,
-                                            "Solo puedes eliminar las fotos que tú has subido",
+                                            context.getString(R.string.only_your_photos),
                                             android.widget.Toast.LENGTH_SHORT
                                         ).show()
                                     }
@@ -420,7 +427,7 @@ private fun PhotosTab(
                                 } else {
                                     android.widget.Toast.makeText(
                                         context,
-                                        "Solo puedes eliminar las fotos que tú has subido",
+                                        context.getString(R.string.only_your_photos),
                                         android.widget.Toast.LENGTH_SHORT
                                     ).show()
                                 }
@@ -474,7 +481,7 @@ private fun MembersTab(
         if (canManageMembers) {
             item {
                 Text(
-                    "Invitar persona",
+                    stringResource(R.string.invite_person_title),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(bottom = 4.dp)
@@ -486,7 +493,7 @@ private fun MembersTab(
                     OutlinedTextField(
                         value = inviteEmail,
                         onValueChange = onInviteEmailChange,
-                        label = { Text("Email") },
+                        label = { Text(stringResource(R.string.email_label)) },
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(
                             keyboardType = KeyboardType.Email,
@@ -509,7 +516,7 @@ private fun MembersTab(
                                 color = MaterialTheme.colorScheme.onPrimary
                             )
                         } else {
-                            Text("Invitar")
+                            Text(stringResource(R.string.invite))
                         }
                     }
                 }
@@ -518,7 +525,7 @@ private fun MembersTab(
 
         item {
             Text(
-                "Miembros",
+                stringResource(R.string.members_section),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.padding(top = 16.dp, bottom = 4.dp)
@@ -539,7 +546,7 @@ private fun MembersTab(
         if (pendingInvites.isNotEmpty()) {
             item {
                 Text(
-                    "Invitaciones pendientes",
+                    stringResource(R.string.pending_invites_section),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(top = 16.dp, bottom = 4.dp)
@@ -620,7 +627,7 @@ private fun MemberRow(
                 ) {
                     Icon(
                         Icons.Default.PersonRemove,
-                        contentDescription = "Eliminar miembro",
+                        contentDescription = stringResource(R.string.cd_remove_member),
                         tint = MaterialTheme.colorScheme.error,
                         modifier = Modifier.size(20.dp)
                     )
@@ -669,7 +676,7 @@ private fun PendingInviteRow(email: String) {
                 shape = RoundedCornerShape(50),
             ) {
                 Text(
-                    "pendiente",
+                    stringResource(R.string.pending_badge),
                     style = MaterialTheme.typography.labelSmall,
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                     color = MaterialTheme.colorScheme.onTertiaryContainer,
@@ -688,12 +695,12 @@ private fun RenameAlbumDialog(
     var name by remember { mutableStateOf(currentName) }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Renombrar álbum") },
+        title = { Text(stringResource(R.string.rename_album_title)) },
         text = {
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
-                label = { Text("Nombre del álbum") },
+                label = { Text(stringResource(R.string.album_name_label)) },
                 singleLine = true,
             )
         },
@@ -702,11 +709,11 @@ private fun RenameAlbumDialog(
                 onClick = { onRename(name.trim()) },
                 enabled = name.isNotBlank() && name.trim() != currentName
             ) {
-                Text("Guardar")
+                Text(stringResource(R.string.save))
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancelar") }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
         }
     )
 }
@@ -714,9 +721,9 @@ private fun RenameAlbumDialog(
 @Composable
 private fun RoleBadge(role: AlbumRole) {
     val (label, containerColor) = when (role) {
-        AlbumRole.OWNER -> "propietario" to MaterialTheme.colorScheme.primaryContainer
-        AlbumRole.ADMIN -> "admin" to MaterialTheme.colorScheme.secondaryContainer
-        AlbumRole.MEMBER -> "miembro" to MaterialTheme.colorScheme.surfaceVariant
+        AlbumRole.OWNER -> stringResource(R.string.role_owner) to MaterialTheme.colorScheme.primaryContainer
+        AlbumRole.ADMIN -> stringResource(R.string.role_admin) to MaterialTheme.colorScheme.secondaryContainer
+        AlbumRole.MEMBER -> stringResource(R.string.role_member) to MaterialTheme.colorScheme.surfaceVariant
     }
     Surface(
         color = containerColor,

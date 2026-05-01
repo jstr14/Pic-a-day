@@ -1,4 +1,118 @@
 <resources>
     <string name="app_name">Pic-A-Day</string>
+    <string name="app_title">PicADay</string>
     <string name="welcome_app_message">Welcome to Pic-A-Day</string>
+
+    <!-- Login -->
+    <string name="sign_in_failed">Sign-In failed</string>
+    <string name="ok">OK</string>
+    <string name="capture_tagline">Capture a moment every day</string>
+    <string name="sign_in_with_google">Sign in with Google</string>
+
+    <!-- Navigation -->
+    <string name="nav_home">Home</string>
+    <string name="nav_albums">Albums</string>
+    <string name="nav_favorites">Favorites</string>
+    <string name="today">Today</string>
+    <string name="cd_sign_out">Sign Out</string>
+    <string name="coming_soon">Coming soon</string>
+
+    <!-- Calendar -->
+    <string name="cd_upload_photo">Upload photo</string>
+    <string name="saving_memories">Saving your memories…</string>
+
+    <!-- Album selector sheet -->
+    <string name="add_to">Add to…</string>
+    <string name="personal_diary">My personal diary</string>
+
+    <!-- Day detail sheet -->
+    <string name="add_description">Add your description…</string>
+    <string name="cd_confirm">Confirm</string>
+    <string name="cd_edit_description">Edit description</string>
+    <string name="albums_section">Albums</string>
+    <string name="no_location">No location</string>
+    <string name="open_in_maps">Open in Google Maps</string>
+
+    <!-- Day detail screen -->
+    <string name="loading_memories">Loading memories…</string>
+    <string name="cd_back">Back</string>
+    <string name="cd_add_photos">Add photos</string>
+    <string name="empty_day_title">No memories for this day yet</string>
+    <string name="empty_day_body">Tap the button below to add your first memory</string>
+
+    <!-- Day image section -->
+    <string name="delete_photo_title">Delete photo?</string>
+    <string name="delete_photo_body">This photo will be permanently deleted.</string>
+    <string name="delete">Delete</string>
+    <string name="cancel">Cancel</string>
+    <string name="delete_day_title">Delete entire day?</string>
+    <string name="delete_day_body">All photos and text for this day will be permanently deleted.</string>
+    <string name="delete_all">Delete All</string>
+    <string name="cd_in_album">In album</string>
+
+    <!-- Albums screen -->
+    <string name="cd_create_album">Create album</string>
+    <string name="no_albums_title">No albums yet</string>
+    <string name="no_albums_body">Tap + to create a shared one</string>
+    <string name="new_album_title">New album</string>
+    <string name="album_name_label">Album name</string>
+    <string name="create">Create</string>
+
+    <!-- Album detail screen -->
+    <string name="invite_sent">Invitation sent successfully</string>
+    <string name="invite_pending_account">This user doesn\'t have an account yet. They will join the album automatically when they sign up.</string>
+    <string name="invite_error">Error sending the invitation</string>
+    <string name="delete_album_photos_body">Photos will be removed from this album. If they are also in your personal diary, they won\'t be affected.</string>
+    <string name="delete_album_title">Delete album</string>
+    <string name="delete_album_body">Your photos will be moved to your personal diary. Photos uploaded by other members will be permanently deleted.</string>
+    <string name="move_my_photos_and_delete">Move my photos and delete</string>
+    <string name="delete_all_album">Delete everything</string>
+    <string name="cd_cancel_selection">Cancel selection</string>
+    <string name="cd_delete_selection">Delete selection</string>
+    <string name="cd_rename_album">Rename album</string>
+    <string name="cd_delete_album">Delete album</string>
+    <string name="tab_photos">Photos</string>
+    <string name="tab_members">Members</string>
+    <string name="saving_album_photos">Saving photos to album…</string>
+    <string name="no_photos_yet">No photos yet</string>
+    <string name="only_your_photos">You can only delete photos you uploaded</string>
+    <string name="invite_person_title">Invite person</string>
+    <string name="email_label">Email</string>
+    <string name="invite">Invite</string>
+    <string name="members_section">Members</string>
+    <string name="pending_invites_section">Pending invitations</string>
+    <string name="cd_remove_member">Remove member</string>
+    <string name="pending_badge">pending</string>
+    <string name="rename_album_title">Rename album</string>
+    <string name="save">Save</string>
+    <string name="role_owner">owner</string>
+    <string name="role_admin">admin</string>
+    <string name="role_member">member</string>
+
+    <!-- Calendar header -->
+    <string name="cd_previous_year">Previous year</string>
+    <string name="cd_previous_month">Previous month</string>
+    <string name="cd_next_year">Next year</string>
+    <string name="cd_next_month">Next month</string>
+    <string name="cd_back_to_month">Back to month view</string>
+    <string name="cd_show_year">Show year overview</string>
+
+    <!-- Day image section -->
+    <string name="cd_toggle_carousel">View as carousel</string>
+    <string name="cd_toggle_grid">View as grid</string>
+    <string name="cd_favorite">Favorite</string>
+    <string name="favorite_coming_soon">Favorite (coming soon)</string>
+    <string name="uploading_memories">Adding memories…</string>
+    <string name="deleting">Deleting…</string>
+    <string name="cd_add">Add</string>
+    <string name="cd_share">Share</string>
+    <string name="share_coming_soon">Share (coming soon)</string>
+    <string name="cd_save">Save</string>
+    <string name="cd_album">Album</string>
+    <string name="cd_remove">Remove</string>
+    <string name="label_remove_all">Remove all</string>
+    <string name="saved_to_gallery">Saved to gallery</string>
+    <string name="error_saving">Error saving</string>
+    <string name="photo_added_to_album">Photo added to album</string>
+    <string name="error_adding_to_album">Error adding to album</string>
 </resources>

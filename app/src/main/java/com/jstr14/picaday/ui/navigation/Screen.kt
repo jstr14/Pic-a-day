@@ -10,4 +10,5 @@ sealed class Screen(val route: String) {
     object AlbumDetail : Screen("album_detail_screen/{albumId}") {
         fun createRoute(albumId: String) = "album_detail_screen/$albumId"
     }
+    object Favorites : Screen("favorites_screen")
 }

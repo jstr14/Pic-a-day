@@ -1,0 +1,118 @@
+<resources>
+    <string name="app_name">Pic-A-Day</string>
+    <string name="app_title">PicADay</string>
+    <string name="welcome_app_message">Bienvenido a Pic-A-Day</string>
+
+    <!-- Login -->
+    <string name="sign_in_failed">Error al iniciar sesión</string>
+    <string name="ok">Aceptar</string>
+    <string name="capture_tagline">Captura un momento cada día</string>
+    <string name="sign_in_with_google">Iniciar sesión con Google</string>
+
+    <!-- Navigation -->
+    <string name="nav_home">Inicio</string>
+    <string name="nav_albums">Álbumes</string>
+    <string name="nav_favorites">Favoritos</string>
+    <string name="today">Hoy</string>
+    <string name="cd_sign_out">Cerrar sesión</string>
+    <string name="coming_soon">Próximamente</string>
+
+    <!-- Calendar -->
+    <string name="cd_upload_photo">Subir foto</string>
+    <string name="saving_memories">Guardando tus recuerdos…</string>
+
+    <!-- Album selector sheet -->
+    <string name="add_to">Añadir a…</string>
+    <string name="personal_diary">Mi diario personal</string>
+
+    <!-- Day detail sheet -->
+    <string name="add_description">Añadir tu descripción…</string>
+    <string name="cd_confirm">Confirmar</string>
+    <string name="cd_edit_description">Editar descripción</string>
+    <string name="albums_section">Álbumes</string>
+    <string name="no_location">Sin ubicación</string>
+    <string name="open_in_maps">Abrir en Google Maps</string>
+
+    <!-- Day detail screen -->
+    <string name="loading_memories">Buscando recuerdos…</string>
+    <string name="cd_back">Atrás</string>
+    <string name="cd_add_photos">Añadir fotos</string>
+    <string name="empty_day_title">Aún no hay recuerdos para este día</string>
+    <string name="empty_day_body">Pulsa el botón de abajo para añadir tu primer recuerdo</string>
+
+    <!-- Day image section -->
+    <string name="delete_photo_title">¿Eliminar foto?</string>
+    <string name="delete_photo_body">Esta foto se eliminará permanentemente.</string>
+    <string name="delete">Eliminar</string>
+    <string name="cancel">Cancelar</string>
+    <string name="delete_day_title">¿Borrar día completo?</string>
+    <string name="delete_day_body">Se eliminarán permanentemente todas las fotos y el texto de este día.</string>
+    <string name="delete_all">Borrar Todo</string>
+    <string name="cd_in_album">En álbum</string>
+
+    <!-- Albums screen -->
+    <string name="cd_create_album">Crear álbum</string>
+    <string name="no_albums_title">Sin álbumes todavía</string>
+    <string name="no_albums_body">Pulsa + para crear uno compartido</string>
+    <string name="new_album_title">Nuevo álbum</string>
+    <string name="album_name_label">Nombre del álbum</string>
+    <string name="create">Crear</string>
+
+    <!-- Album detail screen -->
+    <string name="invite_sent">Invitación enviada correctamente</string>
+    <string name="invite_pending_account">Este usuario aún no tiene cuenta. Se unirá al álbum automáticamente cuando se registre.</string>
+    <string name="invite_error">Error al enviar la invitación</string>
+    <string name="delete_album_photos_body">Las fotos se eliminarán de este álbum. Si también están en tu diario personal, no se verán afectadas.</string>
+    <string name="delete_album_title">Eliminar álbum</string>
+    <string name="delete_album_body">Tus fotos se moverán a tu diario personal. Las fotos subidas por otros miembros se eliminarán permanentemente.</string>
+    <string name="move_my_photos_and_delete">Mover mis fotos y eliminar</string>
+    <string name="delete_all_album">Eliminar todo</string>
+    <string name="cd_cancel_selection">Cancelar selección</string>
+    <string name="cd_delete_selection">Eliminar selección</string>
+    <string name="cd_rename_album">Renombrar álbum</string>
+    <string name="cd_delete_album">Eliminar álbum</string>
+    <string name="tab_photos">Fotos</string>
+    <string name="tab_members">Miembros</string>
+    <string name="saving_album_photos">Guardando fotos en el álbum…</string>
+    <string name="no_photos_yet">Sin fotos todavía</string>
+    <string name="only_your_photos">Solo puedes eliminar las fotos que tú has subido</string>
+    <string name="invite_person_title">Invitar persona</string>
+    <string name="email_label">Email</string>
+    <string name="invite">Invitar</string>
+    <string name="members_section">Miembros</string>
+    <string name="pending_invites_section">Invitaciones pendientes</string>
+    <string name="cd_remove_member">Eliminar miembro</string>
+    <string name="pending_badge">pendiente</string>
+    <string name="rename_album_title">Renombrar álbum</string>
+    <string name="save">Guardar</string>
+    <string name="role_owner">propietario</string>
+    <string name="role_admin">admin</string>
+    <string name="role_member">miembro</string>
+
+    <!-- Calendar header -->
+    <string name="cd_previous_year">Año anterior</string>
+    <string name="cd_previous_month">Mes anterior</string>
+    <string name="cd_next_year">Año siguiente</string>
+    <string name="cd_next_month">Mes siguiente</string>
+    <string name="cd_back_to_month">Volver a vista mensual</string>
+    <string name="cd_show_year">Ver resumen del año</string>
+
+    <!-- Day image section -->
+    <string name="cd_toggle_carousel">Ver como carrusel</string>
+    <string name="cd_toggle_grid">Ver como cuadrícula</string>
+    <string name="cd_favorite">Favorito</string>
+    <string name="favorite_coming_soon">Favorito (próximamente)</string>
+    <string name="uploading_memories">Añadiendo recuerdos…</string>
+    <string name="deleting">Eliminando…</string>
+    <string name="cd_add">Añadir</string>
+    <string name="cd_share">Compartir</string>
+    <string name="share_coming_soon">Compartir (próximamente)</string>
+    <string name="cd_save">Guardar</string>
+    <string name="cd_album">Álbum</string>
+    <string name="cd_remove">Eliminar</string>
+    <string name="label_remove_all">Eliminar todo</string>
+    <string name="saved_to_gallery">Guardado en galería</string>
+    <string name="error_saving">Error al guardar</string>
+    <string name="photo_added_to_album">Foto añadida al álbum</string>
+    <string name="error_adding_to_album">Error al añadir al álbum</string>
+</resources>

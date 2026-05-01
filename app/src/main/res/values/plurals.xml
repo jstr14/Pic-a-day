@@ -1,0 +1,16 @@
+<resources>
+    <plurals name="member_count">
+        <item quantity="one">%d member</item>
+        <item quantity="other">%d members</item>
+    </plurals>
+
+    <plurals name="selected_photos">
+        <item quantity="one">%d selected</item>
+        <item quantity="other">%d selected</item>
+    </plurals>
+
+    <plurals name="delete_photos_title">
+        <item quantity="one">Delete %d photo from album?</item>
+        <item quantity="other">Delete %d photos from album?</item>
+    </plurals>
+</resources>

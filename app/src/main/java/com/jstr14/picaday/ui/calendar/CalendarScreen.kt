@@ -23,7 +23,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.jstr14.picaday.R
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.jstr14.picaday.ui.calendar.components.CalendarDayCell
@@ -143,7 +145,7 @@ fun CalendarScreen(
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = "Subir foto")
+                    Icon(Icons.Default.Add, contentDescription = stringResource(R.string.cd_upload_photo))
                 }
             }
         }
@@ -238,7 +240,7 @@ fun CalendarScreen(
                         )
                         Spacer(Modifier.width(12.dp))
                         Text(
-                            text = "Guardando tus recuerdos...",
+                            text = stringResource(R.string.saving_memories),
                             style = MaterialTheme.typography.labelLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
