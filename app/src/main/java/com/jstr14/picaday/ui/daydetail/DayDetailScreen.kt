@@ -53,9 +53,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.jstr14.picaday.R
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.jstr14.picaday.ui.components.AlbumSelectorSheet
 import com.jstr14.picaday.ui.theme.logo.PicADayLogo
@@ -134,16 +136,21 @@ fun DayDetailScreen(
         else showAlbumSelector = true
     }
 
+    val msgSavedToGallery = stringResource(R.string.saved_to_gallery)
+    val msgErrorSaving = stringResource(R.string.error_saving)
+    val msgPhotoAddedToAlbum = stringResource(R.string.photo_added_to_album)
+    val msgErrorAddingToAlbum = stringResource(R.string.error_adding_to_album)
+
     LaunchedEffect(saveResult) {
         saveResult ?: return@LaunchedEffect
-        val message = if (saveResult is SaveResult.Success) "Guardado en galería" else "Error al guardar"
+        val message = if (saveResult is SaveResult.Success) msgSavedToGallery else msgErrorSaving
         Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
         viewModel.clearSaveResult()
     }
 
     LaunchedEffect(Unit) {
         viewModel.addToAlbumResult.collect { success ->
-            val message = if (success) "Foto añadida al álbum" else "Error al añadir al álbum"
+            val message = if (success) msgPhotoAddedToAlbum else msgErrorAddingToAlbum
             Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
         }
     }
@@ -237,7 +244,7 @@ fun DayDetailScreen(
             ) {
                 CircularProgressIndicator(color = Color.White)
                 Spacer(Modifier.height(16.dp))
-                Text("Buscando recuerdos...", color = Color.White)
+                Text(stringResource(R.string.loading_memories), color = Color.White)
             }
         }
 
@@ -296,7 +303,7 @@ fun DayDetailScreen(
                     .padding(4.dp)
                     .align(Alignment.TopStart)
             ) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, "Atrás", tint = MaterialTheme.colorScheme.onBackground)
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.cd_back), tint = MaterialTheme.colorScheme.onBackground)
             }
         }
 
@@ -311,7 +318,7 @@ fun DayDetailScreen(
                 containerColor = MaterialTheme.colorScheme.primaryContainer,
                 contentColor = MaterialTheme.colorScheme.onPrimaryContainer
             ) {
-                Icon(Icons.Default.AddPhotoAlternate, "Añadir fotos")
+                Icon(Icons.Default.AddPhotoAlternate, stringResource(R.string.cd_add_photos))
             }
         }
     }
@@ -332,7 +339,7 @@ private fun EmptyDayContent(date: String, isUploading: Boolean) {
                 CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                 Spacer(Modifier.height(16.dp))
                 Text(
-                    text = "Guardando tus recuerdos...",
+                    text = stringResource(R.string.saving_memories),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
                 )
@@ -353,14 +360,14 @@ private fun EmptyDayContent(date: String, isUploading: Boolean) {
                 )
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    text = "Aún no hay recuerdos para este día",
+                    text = stringResource(R.string.empty_day_title),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
                     textAlign = TextAlign.Center
                 )
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    text = "Pulsa el botón de abajo para añadir tu primer recuerdo",
+                    text = stringResource(R.string.empty_day_body),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.45f),
                     textAlign = TextAlign.Center

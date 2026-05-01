@@ -59,6 +59,8 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.stringResource
+import com.jstr14.picaday.R
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -179,7 +181,7 @@ internal fun DayDetailSheet(
                     Box(modifier = Modifier.weight(1f).bringIntoViewRequester(bringIntoViewRequester)) {
                         if (descriptionText.isEmpty()) {
                             Text(
-                                "Añadir tu descripción...",
+                                stringResource(R.string.add_description),
                                 color = Color.White.copy(alpha = 0.4f),
                                 style = MaterialTheme.typography.bodyLarge
                             )
@@ -205,11 +207,11 @@ internal fun DayDetailSheet(
                         onSaveDescription(LocalDate.parse(date), descriptionText)
                         focusManager.clearFocus()
                     }) {
-                        Icon(Icons.Default.Check, "Confirmar", tint = Color.White)
+                        Icon(Icons.Default.Check, stringResource(R.string.cd_confirm), tint = Color.White)
                     }
                 } else {
                     Text(
-                        text = entry.description.takeIf { !it.isNullOrBlank() } ?: "Añadir tu descripción...",
+                        text = entry.description.takeIf { !it.isNullOrBlank() } ?: stringResource(R.string.add_description),
                         color = if (entry.description.isNullOrBlank()) Color.White.copy(alpha = 0.4f) else Color.White,
                         style = MaterialTheme.typography.bodyLarge,
                         modifier = Modifier.weight(1f)
@@ -219,7 +221,7 @@ internal fun DayDetailSheet(
                         onDescriptionTextChanged(entry.description ?: "")
                         onEditingDescriptionChanged(true)
                     }) {
-                        Icon(Icons.Default.Edit, "Editar descripción", tint = Color.White.copy(alpha = 0.6f))
+                        Icon(Icons.Default.Edit, stringResource(R.string.cd_edit_description), tint = Color.White.copy(alpha = 0.6f))
                     }
                 }
             }
@@ -230,7 +232,7 @@ internal fun DayDetailSheet(
                 Spacer(Modifier.height(16.dp))
 
                 Text(
-                    text = "Álbumes",
+                    text = stringResource(R.string.albums_section),
                     style = MaterialTheme.typography.labelMedium,
                     color = Color.White.copy(alpha = 0.5f),
                 )
@@ -306,12 +308,12 @@ internal fun DayDetailSheet(
                             style = MaterialTheme.typography.bodySmall
                         )
                     } else {
-                        Text("Sin ubicación", color = Color.White.copy(alpha = 0.25f), style = MaterialTheme.typography.bodySmall)
+                        Text(stringResource(R.string.no_location), color = Color.White.copy(alpha = 0.25f), style = MaterialTheme.typography.bodySmall)
                     }
                 }
                 if (lat != null && lon != null) {
                     Text(
-                        text = "Abrir en Google Maps",
+                        text = stringResource(R.string.open_in_maps),
                         color = Color.White.copy(alpha = 0.6f),
                         style = MaterialTheme.typography.labelSmall,
                         modifier = Modifier.align(Alignment.TopEnd).padding(12.dp)
