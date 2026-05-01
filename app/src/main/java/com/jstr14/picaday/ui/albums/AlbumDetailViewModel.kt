@@ -1,9 +1,18 @@
 package com.jstr14.picaday.ui.albums
 
+import android.content.ContentValues
+import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.drawable.BitmapDrawable
 import android.net.Uri
+import android.os.Build
+import android.os.Environment
+import android.provider.MediaStore
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import coil.ImageLoader
+import coil.request.ImageRequest
 import com.google.firebase.auth.FirebaseAuth
 import com.jstr14.picaday.data.repository.FirebaseStorageRepository
 import com.jstr14.picaday.data.repository.ImageRepository
@@ -11,11 +20,15 @@ import com.jstr14.picaday.domain.model.Album
 import com.jstr14.picaday.domain.repository.AlbumRepository
 import com.jstr14.picaday.domain.usecase.ProcessImageUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import com.jstr14.picaday.domain.model.DayEntry
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
@@ -31,9 +44,15 @@ sealed class InviteResult {
     object Error : InviteResult()
 }
 
+sealed class RemoveMemberError {
+    object Member : RemoveMemberError()
+    object PendingInvite : RemoveMemberError()
+}
+
 @HiltViewModel
 class AlbumDetailViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
+    @ApplicationContext private val context: Context,
     private val albumRepository: AlbumRepository,
     private val imageRepository: ImageRepository,
     private val storageRepository: FirebaseStorageRepository,
@@ -44,6 +63,8 @@ class AlbumDetailViewModel @Inject constructor(
     private val albumId: String = checkNotNull(savedStateHandle["albumId"])
     val currentUserId: String? = auth.currentUser?.uid
 
+    private val imageLoader by lazy { ImageLoader(context) }
+
     private val _album = MutableStateFlow<Album?>(null)
     val album: StateFlow<Album?> = _album.asStateFlow()
 
@@ -53,8 +74,14 @@ class AlbumDetailViewModel @Inject constructor(
     private val _inviteResult = MutableStateFlow<InviteResult?>(null)
     val inviteResult: StateFlow<InviteResult?> = _inviteResult.asStateFlow()
 
+    private val _removeMemberError = MutableStateFlow<RemoveMemberError?>(null)
+    val removeMemberError: StateFlow<RemoveMemberError?> = _removeMemberError.asStateFlow()
+
     private val _isUploading = MutableStateFlow(false)
     val isUploading: StateFlow<Boolean> = _isUploading.asStateFlow()
+
+    private val _saveToGalleryResult = MutableSharedFlow<Boolean>(extraBufferCapacity = 1)
+    val saveToGalleryResult: SharedFlow<Boolean> = _saveToGalleryResult.asSharedFlow()
 
     val entries: StateFlow<List<DayEntry>> = albumRepository.getAllEntriesFlow(albumId)
         .catch { e -> e.printStackTrace() }
@@ -118,6 +145,51 @@ class AlbumDetailViewModel @Inject constructor(
         }
     }
 
+    fun saveImageToGallery(imageUrl: String) = savePhotosToGallery(listOf(imageUrl))
+
+    fun savePhotosToGallery(imageUrls: List<String>) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val results = imageUrls.map { saveImageInternal(it) }
+            _saveToGalleryResult.tryEmit(results.all { it })
+        }
+    }
+
+    private suspend fun saveImageInternal(imageUrl: String): Boolean {
+        return try {
+            val request = ImageRequest.Builder(context)
+                .data(imageUrl)
+                .allowHardware(false)
+                .build()
+            val bitmap = (imageLoader.execute(request).drawable as? BitmapDrawable)?.bitmap
+                ?: return false
+
+            val filename = "PicADay_${System.currentTimeMillis()}.jpg"
+            val values = ContentValues().apply {
+                put(MediaStore.Images.Media.DISPLAY_NAME, filename)
+                put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    put(MediaStore.Images.Media.RELATIVE_PATH, "${Environment.DIRECTORY_PICTURES}/PicADay")
+                    put(MediaStore.Images.Media.IS_PENDING, 1)
+                }
+            }
+            val uri = context.contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
+                ?: return false
+
+            context.contentResolver.openOutputStream(uri)?.use { stream ->
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 95, stream)
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                values.clear()
+                values.put(MediaStore.Images.Media.IS_PENDING, 0)
+                context.contentResolver.update(uri, values, null, null)
+            }
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
+
     fun inviteByEmail(email: String) {
         viewModelScope.launch {
             _isInviting.value = true
@@ -137,8 +209,24 @@ class AlbumDetailViewModel @Inject constructor(
                 albumRepository.removeMember(albumId, userId)
             } catch (e: Exception) {
                 e.printStackTrace()
+                _removeMemberError.value = RemoveMemberError.Member
             }
         }
+    }
+
+    fun removePendingInvite(email: String) {
+        viewModelScope.launch {
+            try {
+                albumRepository.removePendingInvite(albumId, email)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                _removeMemberError.value = RemoveMemberError.PendingInvite
+            }
+        }
+    }
+
+    fun clearRemoveMemberError() {
+        _removeMemberError.value = null
     }
 
     fun renameAlbum(newName: String) {
@@ -166,7 +254,6 @@ class AlbumDetailViewModel @Inject constructor(
         }
     }
 
-    // photosByDate: date → list of URLs to delete on that date
     fun deletePhotos(photosByDate: Map<LocalDate, List<String>>) {
         viewModelScope.launch {
             photosByDate.entries.map { (date, urls) ->
@@ -203,14 +290,12 @@ class AlbumDetailViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val entries = albumRepository.getAllEntries(albumId)
-                // Cache existing personal URLs per date to avoid duplicates
                 val existingUrlsByDate = mutableMapOf<LocalDate, Set<String>>()
                 entries.forEach { entry ->
                     val existingUrls = existingUrlsByDate.getOrPut(entry.date) {
                         imageRepository.getEntry(entry.date)?.photos?.map { it.url }?.toSet()
                             ?: emptySet()
                     }
-                    // Only move photos uploaded by the current user
                     entry.photos
                         .filter { it.uploadedByUid == currentUserId || it.uploadedByUid == null }
                         .forEach { photo ->

@@ -36,8 +36,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -132,7 +130,7 @@ fun AlbumsScreen(
 
 @Composable
 private fun AlbumCard(album: Album, onClick: () -> Unit) {
-    val cardColor = lerp(Color.White, MaterialTheme.colorScheme.primary, 0.18f)
+    val cardColor = MaterialTheme.colorScheme.primaryContainer
     Card(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),

@@ -1,5 +1,4 @@
 <resources>
-    <string name="app_name">Pic-A-Day</string>
     <string name="app_title">PicADay</string>
     <string name="welcome_app_message">Welcome to Pic-A-Day</string>
 
@@ -15,6 +14,8 @@
     <string name="nav_favorites">Favorites</string>
     <string name="today">Today</string>
     <string name="cd_sign_out">Sign Out</string>
+    <string name="cd_profile">Profile</string>
+    <string name="sign_out">Sign out</string>
     <string name="coming_soon">Coming soon</string>
 
     <!-- Calendar -->
@@ -82,6 +83,9 @@
     <string name="members_section">Members</string>
     <string name="pending_invites_section">Pending invitations</string>
     <string name="cd_remove_member">Remove member</string>
+    <string name="cd_remove_pending_invite">Remove pending invite</string>
+    <string name="error_removing_member">Error removing the member</string>
+    <string name="error_removing_pending_invite">Error removing the invitation</string>
     <string name="pending_badge">pending</string>
     <string name="rename_album_title">Rename album</string>
     <string name="save">Save</string>

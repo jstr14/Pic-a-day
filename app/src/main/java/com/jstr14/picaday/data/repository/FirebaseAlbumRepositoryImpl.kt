@@ -176,6 +176,12 @@ class FirebaseAlbumRepositoryImpl @Inject constructor(
             .await()
     }
 
+    override suspend fun removePendingInvite(albumId: String, email: String) {
+        firestore.collection("albums").document(albumId)
+            .update("pendingInvites", FieldValue.arrayRemove(email))
+            .await()
+    }
+
     override fun getAllEntriesFlow(albumId: String): Flow<List<DayEntry>> = callbackFlow {
         val sub = firestore.collection("albums").document(albumId)
             .collection("entries")
