@@ -34,6 +34,7 @@ import com.jstr14.picaday.ui.theme.util.Season
 import com.jstr14.picaday.ui.theme.util.SeasonManager
 import com.jstr14.picaday.ui.navigation.Screen
 import com.jstr14.picaday.ui.theme.PicADayTheme
+import com.jstr14.picaday.widget.EXTRA_WIDGET_DATE
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -78,6 +79,8 @@ class MainActivity : ComponentActivity() {
             .build()
         val googleSignInClient = GoogleSignIn.getClient(this, gso)
 
+        val widgetDate = intent.getStringExtra(EXTRA_WIDGET_DATE)
+
         setContent {
             PicADayTheme {
                 val navController = rememberNavController()
@@ -92,6 +95,13 @@ class MainActivity : ComponentActivity() {
                                 popUpTo(0) { inclusive = true }
                             }
                         }
+                    }
+                }
+
+                // Navigate to the day the widget was showing when tapped
+                LaunchedEffect(widgetDate, isInitializing, currentUser) {
+                    if (!widgetDate.isNullOrBlank() && !isInitializing && currentUser != null) {
+                        navController.navigate(Screen.DayDetail.createRoute(widgetDate))
                     }
                 }
 

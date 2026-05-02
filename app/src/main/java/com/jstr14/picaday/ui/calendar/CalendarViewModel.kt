@@ -12,6 +12,7 @@ import com.jstr14.picaday.domain.usecase.GetMergedEntriesUseCase
 import com.jstr14.picaday.domain.usecase.ProcessImageUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -78,14 +79,28 @@ class CalendarViewModel @Inject constructor(
     private val _scrollToToday = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     val scrollToToday: SharedFlow<Unit> = _scrollToToday.asSharedFlow()
 
+    private val _scrollToMonth = MutableStateFlow<YearMonth?>(null)
+    val scrollToMonth: StateFlow<YearMonth?> = _scrollToMonth.asStateFlow()
+
     fun requestScrollToToday() {
         _scrollToToday.tryEmit(Unit)
     }
 
+    fun requestScrollToDate(month: YearMonth) {
+        _scrollToMonth.value = month
+    }
+
+    fun consumeScrollToDate() {
+        _scrollToMonth.value = null
+    }
+
     private var activeUploads = 0
 
+    private var loadMonthJob: Job? = null
+
     fun loadMonthData(month: YearMonth) {
-        viewModelScope.launch {
+        loadMonthJob?.cancel()
+        loadMonthJob = viewModelScope.launch {
             getMergedEntries.forMonth(month)
                 .catch { e -> e.printStackTrace() }
                 .collect { loadedEntries ->

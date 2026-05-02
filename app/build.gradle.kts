@@ -32,8 +32,8 @@ android {
         applicationId = "com.jstr14.picaday"
         minSdk = 26
         targetSdk = 36
-        versionCode = 7
-        versionName = "0.0.7"
+        versionCode = 8
+        versionName = "0.0.8"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -125,6 +125,11 @@ dependencies {
     coreLibraryDesugaring(libs.tools.desugar)
 
     implementation(libs.androidx.exifinterface)
+
+    // Widget
+    implementation(libs.androidx.glance.appwidget)
+    implementation(libs.androidx.work.runtime.ktx)
+    implementation(libs.androidx.datastore.preferences)
 
     // Test
     testImplementation(libs.junit.jupiter.api)

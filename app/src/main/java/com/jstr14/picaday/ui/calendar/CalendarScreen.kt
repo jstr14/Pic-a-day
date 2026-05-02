@@ -92,6 +92,14 @@ fun CalendarScreen(
         }
     }
 
+    val scrollToMonthTarget by viewModel.scrollToMonth.collectAsState()
+    LaunchedEffect(scrollToMonthTarget) {
+        val month = scrollToMonthTarget ?: return@LaunchedEffect
+        viewModel.setYearMode(false)
+        state.animateScrollToMonth(month)
+        viewModel.consumeScrollToDate()
+    }
+
     val context = LocalContext.current
 
     val pickMultipleMedia = rememberLauncherForActivityResult(
