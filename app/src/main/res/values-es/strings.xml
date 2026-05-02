@@ -93,6 +93,11 @@
     <string name="role_admin">admin</string>
     <string name="role_member">miembro</string>
 
+    <!-- Widget -->
+    <string name="widget_loading">Cargando recuerdos…</string>
+    <string name="widget_sign_in">Inicia sesión en PicADay\npara ver tus recuerdos</string>
+    <string name="widget_no_memories">No hay recuerdos\npara este día en años anteriores</string>
+
     <!-- Calendar header -->
     <string name="cd_previous_year">Año anterior</string>
     <string name="cd_previous_month">Mes anterior</string>
@@ -119,4 +124,10 @@
     <string name="error_saving">Error al guardar</string>
     <string name="photo_added_to_album">Foto añadida al álbum</string>
     <string name="error_adding_to_album">Error al añadir al álbum</string>
+
+    <!-- Widget plurals -->
+    <plurals name="widget_years_ago">
+        <item quantity="one">Hace 1 año</item>
+        <item quantity="other">Hace %d años</item>
+    </plurals>
 </resources>

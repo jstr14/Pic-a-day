@@ -126,6 +126,11 @@ dependencies {
 
     implementation(libs.androidx.exifinterface)
 
+    // Widget
+    implementation(libs.androidx.glance.appwidget)
+    implementation(libs.androidx.work.runtime.ktx)
+    implementation(libs.androidx.datastore.preferences)
+
     // Test
     testImplementation(libs.junit.jupiter.api)
     testRuntimeOnly(libs.junit.jupiter.engine)

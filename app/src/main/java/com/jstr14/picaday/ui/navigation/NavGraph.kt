@@ -1,5 +1,6 @@
 package com.jstr14.picaday.ui.navigation
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -42,7 +43,18 @@ fun NavGraph(
             arguments = listOf(navArgument("dayId") { type = NavType.StringType })
         ) { backStackEntry ->
             val date = backStackEntry.arguments?.getString("dayId") ?: ""
-            DayDetailScreen(date = date, onBack = { navController.popBackStack() })
+            val navigateBack = {
+                navController.previousBackStackEntry
+                    ?.savedStateHandle
+                    ?.set("scrollToDate", date)
+                navController.popBackStack()
+                Unit
+            }
+            BackHandler(onBack = navigateBack)
+            DayDetailScreen(
+                date = date,
+                onBack = navigateBack
+            )
         }
 
         composable(

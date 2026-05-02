@@ -19,9 +19,14 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.navigation.compose.currentBackStackEntryAsState
+import java.time.LocalDate
 import java.time.YearMonth
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -52,6 +57,16 @@ fun HomeScreen(
     navController: NavHostController,
     calendarViewModel: CalendarViewModel = hiltViewModel()
 ) {
+    // Scroll the calendar to the correct month when returning from DayDetail.
+    // Using currentBackStackEntryAsState so we only act when HomeScreen is the active destination.
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    LaunchedEffect(navBackStackEntry) {
+        if (navBackStackEntry?.destination?.route != Screen.Home.route) return@LaunchedEffect
+        val date = navBackStackEntry?.savedStateHandle
+            ?.get<String>("scrollToDate") ?: return@LaunchedEffect
+        calendarViewModel.requestScrollToDate(YearMonth.from(LocalDate.parse(date)))
+        navBackStackEntry?.savedStateHandle?.remove<String>("scrollToDate")
+    }
     val visibleMonth by calendarViewModel.visibleMonth.collectAsState()
     val isYearMode by calendarViewModel.isYearMode.collectAsState()
     val yearModeYear by calendarViewModel.yearModeYear.collectAsState()
