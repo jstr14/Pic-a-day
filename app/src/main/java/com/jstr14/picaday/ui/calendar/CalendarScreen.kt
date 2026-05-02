@@ -33,6 +33,7 @@ import com.jstr14.picaday.ui.calendar.components.YearOverviewCalendar
 import com.jstr14.picaday.ui.navigation.Screen
 import com.kizitonwose.calendar.compose.HorizontalCalendar
 import com.kizitonwose.calendar.compose.rememberCalendarState
+import com.kizitonwose.calendar.core.OutDateStyle
 import com.kizitonwose.calendar.core.daysOfWeek
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -54,7 +55,8 @@ fun CalendarScreen(
         startMonth = startMonth,
         endMonth = endMonth,
         firstVisibleMonth = currentMonth,
-        firstDayOfWeek = daysOfWeek.first()
+        firstDayOfWeek = daysOfWeek.first(),
+        outDateStyle = OutDateStyle.EndOfRow
     )
 
     val entries by viewModel.entries.collectAsState()
@@ -141,28 +143,20 @@ fun CalendarScreen(
         viewModel.updateVisibleMonth(visibleMonth)
     }
 
-    Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,
-        floatingActionButton = {
-            if (!isYearMode) {
-                FloatingActionButton(
-                    onClick = { onUploadClick() },
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary
-                ) {
-                    Icon(Icons.Default.Add, contentDescription = stringResource(R.string.cd_upload_photo))
-                }
-            }
-        }
-    ) { padding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background)
-                .padding(bottom = padding.calculateBottomPadding())
-        ) {
-            // Calendar - Main content
-            Column(modifier = Modifier.fillMaxSize().padding(top = 32.dp)) {
+    BoxWithConstraints(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+    ) {
+        val weeksInMonth = state.firstVisibleMonth.weekDays.size
+        // Reserve space for top padding (8dp) + days-of-week header (~40dp)
+        val reservedHeight = 48.dp
+        val cellHeightByAspect = maxWidth / 7 / 0.7f
+        val cellHeightBySpace = (maxHeight - reservedHeight) / weeksInMonth
+        val cellHeight = minOf(cellHeightByAspect, cellHeightBySpace)
+
+        // Calendar - Main content
+        Column(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
                 AnimatedVisibility(
                     visible = !isYearMode,
                     enter = fadeIn(),
@@ -175,7 +169,8 @@ fun CalendarScreen(
                             CalendarDayCell(
                                 day = day,
                                 images = entryForDay?.imageUrls ?: emptyList(),
-                                isToday = day.date == today
+                                isToday = day.date == today,
+                                cellHeight = cellHeight
                             ) { clickedDay ->
                                 navController.navigate(Screen.DayDetail.createRoute(clickedDay.date.toString()))
                             }
@@ -201,6 +196,20 @@ fun CalendarScreen(
                 }
             }
 
+            // FAB
+            if (!isYearMode) {
+                FloatingActionButton(
+                    onClick = { onUploadClick() },
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(end = 16.dp, bottom = 8.dp)
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = stringResource(R.string.cd_upload_photo))
+                }
+            }
+
             // Loading indicator
             StatusPillIndicator(
                 visible = isUploading,
@@ -212,5 +221,4 @@ fun CalendarScreen(
                     .padding(bottom = 32.dp)
             )
         }
-    }
 }

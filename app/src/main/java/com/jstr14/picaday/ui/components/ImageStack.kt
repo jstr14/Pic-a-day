@@ -1,5 +1,11 @@
 package com.jstr14.picaday.ui.components
 
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -7,16 +13,19 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
+import coil.compose.SubcomposeAsyncImage
+import coil.request.ImageRequest
 
 @Composable
 fun ImageStack(
@@ -43,16 +52,35 @@ fun ImageStack(
         contentAlignment = Alignment.CenterStart
     ) {
         displayImages.forEachIndexed { index, url ->
-            AsyncImage(
-                model = url,
+            SubcomposeAsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(url)
+                    .crossfade(true)
+                    .build(),
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .offset(x = overlapOffset * index)
                     .size(circleSize)
                     .clip(CircleShape)
-                    .border(1.5.dp, MaterialTheme.colorScheme.surface, CircleShape)
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                    .border(1.5.dp, MaterialTheme.colorScheme.surface, CircleShape),
+                loading = {
+                    val transition = rememberInfiniteTransition(label = "shimmer")
+                    val alpha by transition.animateFloat(
+                        initialValue = 0.08f,
+                        targetValue = 0.22f,
+                        animationSpec = infiniteRepeatable(
+                            animation = tween(700, easing = LinearEasing),
+                            repeatMode = RepeatMode.Reverse
+                        ),
+                        label = "shimmer_alpha"
+                    )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(MaterialTheme.colorScheme.onSurface.copy(alpha = alpha))
+                    )
+                }
             )
         }
 
