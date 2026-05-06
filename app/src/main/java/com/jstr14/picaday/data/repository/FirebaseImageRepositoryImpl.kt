@@ -48,11 +48,13 @@ class FirebaseImageRepositoryImpl @Inject constructor(
         val currentUid = userId ?: return flowOf(emptyList())
 
         ensureCacheForUser(currentUid)
-        cache.get(month)?.let { return flowOf(it) }
 
         val monthQueryString = "${month.year}-${month.monthValue.toString().padStart(2, '0')}"
 
         return callbackFlow {
+            // Emit cached data immediately for fast display, then stay subscribed for live updates.
+            cache.get(month)?.let { trySend(it) }
+
             val query = firestore.collection("users")
                 .document(currentUid)
                 .collection("entries")
@@ -77,12 +79,14 @@ class FirebaseImageRepositoryImpl @Inject constructor(
         val currentUid = userId ?: return flowOf(emptyList())
 
         ensureCacheForUser(currentUid)
-        if (cache.allMonthsCached(year)) return flowOf(cache.getYear(year))
 
         val yearStart = "$year-01"
         val yearEnd = "$year-12"
 
         return callbackFlow {
+            // Emit cached data immediately for fast display, then stay subscribed for live updates.
+            if (cache.allMonthsCached(year)) trySend(cache.getYear(year))
+
             val query = firestore.collection("users")
                 .document(currentUid)
                 .collection("entries")
