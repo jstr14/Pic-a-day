@@ -88,7 +88,8 @@ class DayDetailViewModel @Inject constructor(
     }
 
     /**
-     * [albumId] null → personal diary; non-null → upload to that shared album (uses EXIF date).
+     * [albumId] null → personal diary; non-null → upload to that shared album.
+     * Both cases use [date] (the day the user is viewing), not the EXIF date.
      */
     fun addMultiplePhotosToSpecificDay(date: LocalDate, uris: List<Uri>, albumId: String? = null) {
         viewModelScope.launch {
@@ -108,7 +109,7 @@ class DayDetailViewModel @Inject constructor(
                                 )
                             } else {
                                 albumRepository.addPhotoToAlbumEntry(
-                                    albumId, processed.date, url, processed.time, processed.lat, processed.lon
+                                    albumId, date, url, processed.time, processed.lat, processed.lon
                                 )
                             }
                         }
@@ -133,13 +134,28 @@ class DayDetailViewModel @Inject constructor(
             try {
                 val wasDeleted = storageRepository.deletePhoto(urlToDelete)
                 if (wasDeleted) {
-                    val updatedPhotos = _state.value?.photos?.filter { it.url != urlToDelete } ?: emptyList()
-                    if (updatedPhotos.isEmpty()) {
-                        imageRepository.deleteDayEntry(date)
-                        _state.value = null
+                    val currentPhotos = _state.value?.photos ?: emptyList()
+                    val albumId = currentPhotos.find { it.url == urlToDelete }?.albumId
+
+                    if (albumId == null) {
+                        // Personal photo: update the personal diary entry.
+                        val updatedPersonalPhotos = currentPhotos
+                            .filter { it.albumId == null && it.url != urlToDelete }
+                        if (updatedPersonalPhotos.isEmpty()) {
+                            imageRepository.deleteDayEntry(date)
+                        } else {
+                            imageRepository.updatePhotos(date, updatedPersonalPhotos)
+                        }
                     } else {
-                        imageRepository.updatePhotos(date, updatedPhotos)
+                        // Album photo: remove it from the album entry, not the personal diary.
+                        albumRepository.deletePhotoFromAlbum(albumId, date, urlToDelete)
                     }
+
+                    // Optimistic update: remove the deleted photo from the combined state.
+                    // Only set null when every photo (personal + album) is gone.
+                    val remaining = currentPhotos.filter { it.url != urlToDelete }
+                    _state.value = if (remaining.isEmpty()) null
+                                   else _state.value?.copy(photos = remaining)
                 }
             } finally {
                 _isDeleting.value = false

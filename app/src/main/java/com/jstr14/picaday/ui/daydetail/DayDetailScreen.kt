@@ -165,6 +165,12 @@ fun DayDetailScreen(
 
     LaunchedEffect(date) { viewModel.loadData(date) }
 
+    LaunchedEffect(imageCount) {
+        if (imageCount > 0 && pagerState.currentPage >= imageCount) {
+            pagerState.animateScrollToPage(imageCount - 1)
+        }
+    }
+
     if (showAlbumSelector) {
         AlbumSelectorSheet(
             albums = albums,
